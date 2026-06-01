@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Rolls-Royce Phantom — The Phantom World</title>
+  <link rel="stylesheet" href="./src/styles/main.css">
+</head>
+<body class="view-drive">
+  <canvas id="cityCanvas" aria-label="Phantom driving view"></canvas>
+
+  <main class="app">
+    <header class="topbar">
+      <section class="brand">
+        <div class="mark">RR</div>
+        <h1>Rolls-Royce Phantom</h1>
+        <p>6.75-litre twin-turbo V12 · Planar suspension · coach doors · The Gallery · chauffeur on call.</p>
+      </section>
+
+      <nav class="tabs" aria-label="View modes">
+        <button class="active" data-view="drive">Drive</button>
+        <button data-view="exterior">Exterior</button>
+        <button data-view="cockpit">Cabin</button>
+        <button data-view="rear">Rear Suite</button>
+        <button data-view="systems">Systems</button>
+        <button data-view="computer">Navigation</button>
+      </nav>
+
+      <section class="quick" aria-label="Quick controls">
+        <button id="beltBtn" title="Driver seatbelt">Belt</button>
+        <button id="doorAllBtn" title="Power coach doors">Doors</button>
+        <button id="rideBtn" title="Ride mode">Magic Carpet</button>
+        <button id="windowsBtn" title="Lower or raise the glass">Windows</button>
+        <button id="chauffeurBtn" title="Summon chauffeur">Chauffeur</button>
+        <button id="nightBtn" title="Night vision">Night</button>
+        <button id="resetBtn" title="Reset">Reset</button>
+      </section>
+    </header>
+
+    <section class="center-stage">
+      <aside class="hud">
+        <div class="speed-row">
+          <div>
+            <div class="speed" id="speedReadout">0</div>
+            <div class="unit">MPH</div>
+          </div>
+          <div class="gear-tile" id="gearReadout">P</div>
+        </div>
+        <div class="meter-grid">
+          <div class="meter"><label><span>Engine</span><span id="rpmText">600 rpm</span></label><div class="bar"><i id="rpmBar"></i></div></div>
+          <div class="meter"><label><span>Torque</span><span id="torqueText">0 Nm</span></label><div class="bar"><i id="torqueBar"></i></div></div>
+          <div class="meter"><label><span>Throttle</span><span id="throttleText">0%</span></label><div class="bar"><i id="throttleBar"></i></div></div>
+          <div class="meter"><label><span>Brake</span><span id="brakeText">0%</span></label><div class="bar brake"><i id="brakeBar"></i></div></div>
+        </div>
+        <div class="turn-signals">
+          <span class="sig" id="sigL">&#9664;</span>
+          <span class="eta" id="etaText">Phantom at rest</span>
+          <span class="sig" id="sigR">&#9654;</span>
+        </div>
+        <div class="warning" id="warning">Select D, close the doors, and the Phantom is yours.</div>
+      </aside>
+
+      <aside class="drive-help">
+        <strong>Drive it yourself</strong><br>
+        <kbd>W</kbd>/<kbd>&uarr;</kbd> accelerate · <kbd>S</kbd>/<kbd>&darr;</kbd> or <kbd>Space</kbd> brake · <kbd>A</kbd>/<kbd>D</kbd> steer · <kbd>P R N D</kbd> gears · <kbd>H</kbd> horn.<br>
+        Or open <strong>Navigation</strong>, choose a destination, and your chauffeur takes the wheel.
+      </aside>
+
+      <!-- EXTERIOR -->
+      <section class="mode-panel panel-exterior">
+        <div class="panel-title">
+          <h2>Exterior — Coachwork</h2>
+          <span class="small"><span class="traffic-indicator"></span><span id="paintStatus">Arctic White over Black, hand-lined coachline</span></span>
+        </div>
+        <div class="car-art-wrap" id="exteriorArt">
+          <div class="phantom-side" id="phantomSide">
+            <div class="body-shell">
+              <div class="coach-line"></div>
+              <div class="door rear" id="rearDoorArt"></div>
+              <div class="door front" id="frontDoorArt"></div>
+              <div class="grille"></div>
+              <div class="spirit" id="spiritArt"></div>
+              <div class="umbrella" id="umbrellaArt"></div>
+            </div>
+            <div class="wheel rear"></div>
+            <div class="wheel front"></div>
+          </div>
+        </div>
+        <div class="control-grid">
+          <button data-door="driver">Driver Door</button>
+          <button data-door="rearLeft">Rear Coach Door</button>
+          <button data-door="all">All Doors</button>
+          <button id="umbrellaBtn">Umbrella</button>
+          <button id="spiritBtn" class="active">Spirit of Ecstasy</button>
+          <button id="lightsBtn" class="active">Laser Headlamps</button>
+        </div>
+        <div class="divider"></div>
+        <div class="readout-grid">
+          <div class="readout"><b id="doorState">Closed</b><span>coach doors</span></div>
+          <div class="readout"><b id="wheelState">Level</b><span>self-levelling centres</span></div>
+          <div class="readout"><b>22&quot;</b><span>part-polished wheels</span></div>
+          <div class="readout"><b id="lightState">Auto</b><span>laser high-beam</span></div>
+        </div>
+      </section>
+
+      <!-- CABIN -->
+      <section class="mode-panel panel-cockpit">
+        <div class="panel-title">
+          <h2>Front Cabin</h2>
+          <span class="small" id="cockpitStatus">Navy leather, open-pore Canadel wood, The Gallery</span>
+        </div>
+        <div class="art-wrap" id="cabinArt"><!-- svg injected --></div>
+        <div class="readout-grid">
+          <div class="readout"><b id="frontSeatRead">0&deg;</b><span>seat recline</span></div>
+          <div class="readout"><b id="climateRead">22&deg;C</b><span>seat climate</span></div>
+          <div class="readout"><b id="beltRead">Open</b><span>driver belt</span></div>
+          <div class="readout"><b id="soundRead">Hushed</b><span>bespoke audio</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="control-grid">
+          <button id="frontForward">Recline +</button>
+          <button id="frontBack">Recline -</button>
+          <button id="memoryBtn">Memory I</button>
+          <button id="heatBtn">Seat Heat</button>
+          <button id="coolBtn">Ventilate</button>
+          <button id="massageBtn">Massage</button>
+          <button id="audioBtn">Bespoke Audio</button>
+          <button id="starsBtn" class="active">Starlight</button>
+          <button id="galleryBtn" class="active">The Gallery</button>
+        </div>
+        <div class="studio-bar">
+          <input type="file" id="studioFile" accept=".mp3,.m4a,.aac,.wav,.ogg,.oga,.flac,audio/*,.mp4,.mov,.m4v,.webm,.mkv,video/*" hidden>
+          <button id="studioUploadBtn" title="Upload an MP3 — or drop in an MP4/MOV and we'll lift the soundtrack out for you">&#9835; Upload your music</button>
+          <span class="small" id="studioNowPlaying">Playing the house suite</span>
+        </div>
+      </section>
+
+      <!-- REAR -->
+      <section class="mode-panel panel-rear">
+        <div class="panel-title">
+          <h2>Rear Suite</h2>
+          <span class="small" id="rearStatus">Individual lounge seats, theatre, privacy</span>
+        </div>
+        <div class="rear-suite">
+          <div class="stars"></div>
+          <div class="screens" id="screensArt"><i></i><i></i></div>
+          <div class="picnic" id="picnicArt"></div>
+          <div class="rear-seat left" id="rearSeatL"></div>
+          <div class="rear-seat right" id="rearSeatR"></div>
+          <div class="divider-glass" id="dividerArt"></div>
+          <div class="cooler" id="coolerArt"></div>
+        </div>
+        <div class="control-grid">
+          <button id="rearReclineBtn">Recline</button>
+          <button id="rearMassageBtn">Massage</button>
+          <button id="tableBtn">Picnic Tables</button>
+          <button id="screenBtn">Theatre</button>
+          <button id="privacyBtn">Privacy</button>
+          <button id="coolerBtn" class="active">Champagne</button>
+        </div>
+      </section>
+
+      <!-- SYSTEMS -->
+      <section class="mode-panel panel-systems">
+        <div class="panel-title">
+          <h2>V12 · 8-speed · Planar Suspension</h2>
+          <span class="small" id="satStatus">Satellite-aided transmission reading the road ahead</span>
+        </div>
+        <div class="systems-visual">
+          <div class="drivetrain">
+            <div class="engine-block"></div>
+            <div class="gear-stack" id="gearStack">
+              <i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i>
+            </div>
+            <div class="shaft" id="shaft"></div>
+            <div class="axle-wheel top"></div>
+            <div class="axle-wheel bottom"></div>
+          </div>
+          <div class="suspension">
+            <div class="ride-window">
+              <div class="road-wave" id="roadWave"></div>
+              <div class="cabin-wave" id="cabinWave"></div>
+            </div>
+            <div class="divider"></div>
+            <div class="readout-grid">
+              <div class="readout"><b id="rideRead">Magic Carpet</b><span>damping</span></div>
+              <div class="readout"><b id="cabinRead">0.00 g</b><span>cabin motion</span></div>
+              <div class="readout"><b id="roadRead">0.00 g</b><span>road input</span></div>
+              <div class="readout"><b id="shiftRead">SAT</b><span>shift map</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="studio-bar">
+          <input type="file" id="engineFile" accept=".mp3,.m4a,.aac,.wav,.ogg,.oga,.flac,audio/*" hidden>
+          <button id="engineLoadBtn" title="Load a real Phantom V12 recording — it becomes the engine voice, pitched with the revs">&#9835; Use a real V12 recording</button>
+          <span class="small" id="engineSoundStatus">Engine voice: synthesised V12</span>
+        </div>
+      </section>
+
+      <!-- NAVIGATION -->
+      <section class="mode-panel panel-computer">
+        <div class="panel-title">
+          <h2>Navigation &amp; Chauffeur</h2>
+          <span class="small" id="computerStatus">Whispers — your connected concierge</span>
+        </div>
+        <div class="smart-screen">
+          <div class="map"><canvas id="mapCanvas"></canvas></div>
+          <div class="computer-controls">
+            <div class="destination-grid" id="destGrid">
+              <button data-destination="White Palace">White Palace</button>
+              <button data-destination="Opera House">Opera House</button>
+              <button data-destination="Royal Hotel">Royal Hotel</button>
+              <button data-destination="The Marina">The Marina</button>
+              <button data-destination="Airport">Private Airport</button>
+              <button data-destination="Private Club">Private Club</button>
+            </div>
+            <button id="summonBtn">Summon Chauffeur</button>
+            <div class="voice">
+              <input id="voiceInput" autocomplete="off" placeholder="“Take me to the White Palace”, “sport mode”, “close the doors”">
+              <button id="voiceBtn">Tell Whispers</button>
+            </div>
+            <div class="status-list">
+              <div><span>Route</span><strong id="navRead">City cruise</strong></div>
+              <div><span>Distance to go</span><strong id="distRead">—</strong></div>
+              <div><span>Driver</span><strong id="driverRead">You</strong></div>
+              <div><span>Adaptive cruise</span><span class="cruise-set"><button id="cruiseDown" title="Slower">&minus;</button><strong id="cruiseRead">Off</strong><button id="cruiseUp" title="Faster">+</button></span></div>
+              <div><span>Lane assist</span><strong id="laneRead">Ready</strong></div>
+              <div><span>Night vision</span><strong id="nightRead">Off</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer class="bottombar">
+      <section class="console" aria-label="Vehicle functions">
+        <button id="laneBtn" class="active">Lane</button>
+        <button id="cruiseBtn">Cruise</button>
+        <button id="cameraBtn" class="active">Flagbearer</button>
+        <button id="hazardBtn">Hazards</button>
+        <button id="hornBtn">Horn</button>
+      </section>
+
+      <section class="gearbox" aria-label="Gears and pedals">
+        <div class="cluster">
+          <button data-gear="P" class="active">P</button>
+          <button data-gear="R">R</button>
+          <button data-gear="N">N</button>
+          <button data-gear="D">D</button>
+        </div>
+        <div class="pedals">
+          <div class="pedal">
+            <span>Throttle <b id="throttleSliderVal">0%</b></span>
+            <input type="range" id="throttleSlider" min="0" max="100" value="0" step="1" aria-label="Throttle — scroll or drag">
+            <i id="throttlePedal"></i>
+          </div>
+          <div class="pedal brake">
+            <span>Brake <b id="brakeSliderVal">0%</b></span>
+            <input type="range" id="brakeSlider" min="0" max="100" value="0" step="1" aria-label="Brake — scroll or drag">
+            <i id="brakePedal"></i>
+          </div>
+        </div>
+      </section>
+
+      <section class="seatpad" aria-label="Seat comfort">
+        <div>
+          <div class="small">Seat comfort</div>
+          <div class="seat-mini" id="seatMini"></div>
+        </div>
+        <div class="seat-actions">
+          <button id="seatHeatQuick" title="Heat">H</button>
+          <button id="seatCoolQuick" title="Ventilate">C</button>
+          <button id="seatMassageQuick" title="Massage">M</button>
+          <button id="seatPlusQuick" title="Recline back">+</button>
+          <button id="seatMinusQuick" title="Recline forward">-</button>
+          <button id="seatResetQuick" title="Upright">0</button>
+        </div>
+      </section>
+    </footer>
+  </main>
+
+  <div class="mobile-pad" aria-label="Touch controls">
+    <span></span><button data-pad="up">Go</button><span></span>
+    <button data-pad="left">&#9664;</button><button data-pad="down">Brake</button><button data-pad="right">&#9654;</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="key-overlay" id="keyOverlay">
+    <div class="key-card">
+      <div class="rrlogo">RR</div>
+      <h1>The Phantom awaits</h1>
+      <p>Take your seat. The 6.75-litre V12 will wake, the doors will draw themselves shut, and the road will fall silent beneath you. Drive it yourself, or hand the wheel to your chauffeur.</p>
+      <button id="startBtn">Enter the Phantom</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

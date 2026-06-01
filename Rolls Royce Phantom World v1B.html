@@ -1,0 +1,2691 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rolls Royce Phantom World</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f6f3ea;
+      --muted: #b7b4a8;
+      --panel: rgba(13, 16, 20, 0.78);
+      --panel-strong: rgba(8, 10, 13, 0.93);
+      --line: rgba(255, 255, 255, 0.14);
+      --gold: #d9b76a;
+      --gold-bright: #f0d58e;
+      --blue: #17456f;
+      --blue-hi: #2f79ae;
+      --leather: #0f3d68;
+      --wood: #5a321d;
+      --white: #f3f0e7;
+      --darkroof: #101319;
+      --green: #68d391;
+      --red: #ff7272;
+      --amber: #ffca68;
+      --shadow: rgba(0, 0, 0, 0.45);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: #080b0f;
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    body {
+      letter-spacing: 0;
+      user-select: none;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--ink);
+      min-height: 34px;
+      border-radius: 6px;
+      padding: 7px 10px;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(240, 213, 142, 0.48);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.active {
+      background: linear-gradient(180deg, rgba(240, 213, 142, 0.32), rgba(176, 134, 56, 0.2));
+      border-color: rgba(240, 213, 142, 0.75);
+      color: #fff8dc;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    button.danger.active {
+      background: rgba(255, 114, 114, 0.22);
+      border-color: rgba(255, 114, 114, 0.7);
+    }
+
+    #cityCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: #0b1118;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      pointer-events: none;
+    }
+
+    .topbar,
+    .bottombar,
+    .mode-panel,
+    .hud,
+    .smart-screen,
+    .drive-help {
+      pointer-events: auto;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(178px, 0.8fr) minmax(310px, 1.55fr) minmax(280px, 1.2fr);
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+    }
+
+    .brand {
+      min-height: 70px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border-radius: 8px;
+      box-shadow: 0 18px 46px var(--shadow);
+    }
+
+    .brand .mark {
+      width: 34px;
+      height: 42px;
+      float: left;
+      margin-right: 12px;
+      border: 1px solid rgba(240, 213, 142, 0.58);
+      border-radius: 5px;
+      display: grid;
+      place-items: center;
+      color: var(--gold-bright);
+      font-family: Georgia, serif;
+      font-size: 17px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(0,0,0,0.2));
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(17px, 2vw, 24px);
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .brand p {
+      clear: none;
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .tabs,
+    .quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 9px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 46px var(--shadow);
+    }
+
+    .tabs button {
+      flex: 1 1 86px;
+      white-space: nowrap;
+    }
+
+    .quick {
+      justify-content: flex-end;
+    }
+
+    .quick button,
+    .gearbox button {
+      min-width: 42px;
+    }
+
+    .center-stage {
+      position: relative;
+      min-height: 0;
+      pointer-events: none;
+    }
+
+    .hud {
+      position: absolute;
+      left: 12px;
+      top: 6px;
+      width: min(326px, calc(100vw - 24px));
+      border: 1px solid var(--line);
+      background: rgba(4, 7, 10, 0.64);
+      border-radius: 8px;
+      padding: 12px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 55px rgba(0,0,0,0.35);
+    }
+
+    .speed-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 10px;
+    }
+
+    .speed {
+      font-size: clamp(42px, 6vw, 68px);
+      line-height: 0.9;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    .unit {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .gear-tile {
+      width: 60px;
+      height: 60px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      border: 1px solid rgba(240, 213, 142, 0.55);
+      background: radial-gradient(circle at 45% 30%, rgba(240, 213, 142, 0.24), rgba(0,0,0,0.22));
+      color: #fff6d2;
+      font-size: 31px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .meter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .meter {
+      min-width: 0;
+    }
+
+    .meter label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.09);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue-hi), var(--gold-bright));
+      transition: width 90ms linear;
+    }
+
+    .warning {
+      margin-top: 8px;
+      min-height: 18px;
+      font-size: 12px;
+      color: var(--amber);
+    }
+
+    .drive-help {
+      position: absolute;
+      right: 12px;
+      top: 6px;
+      width: min(300px, calc(100vw - 24px));
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(4, 7, 10, 0.56);
+      backdrop-filter: blur(16px);
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .drive-help strong {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .mode-panel {
+      position: absolute;
+      right: 12px;
+      bottom: 10px;
+      width: min(560px, calc(100vw - 24px));
+      max-height: min(64vh, 620px);
+      overflow: auto;
+      padding: 13px;
+      display: none;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(8, 10, 13, 0.84);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 70px rgba(0,0,0,0.42);
+    }
+
+    body.view-exterior .panel-exterior,
+    body.view-cockpit .panel-cockpit,
+    body.view-rear .panel-rear,
+    body.view-systems .panel-systems,
+    body.view-computer .panel-computer {
+      display: block;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 9px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .control-grid button {
+      min-width: 0;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .readout {
+      border: 1px solid rgba(255,255,255,0.11);
+      background: rgba(255,255,255,0.055);
+      border-radius: 7px;
+      padding: 8px;
+      min-height: 58px;
+    }
+
+    .readout b {
+      display: block;
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--line);
+      margin: 12px 0;
+    }
+
+    .bottombar {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(300px, 0.8fr) minmax(260px, 0.8fr);
+      gap: 10px;
+      align-items: stretch;
+      padding: 0 12px 12px;
+    }
+
+    .console,
+    .gearbox,
+    .seatpad {
+      border: 1px solid var(--line);
+      background: rgba(8, 10, 13, 0.76);
+      backdrop-filter: blur(18px);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 18px 46px rgba(0,0,0,0.34);
+    }
+
+    .console {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .console button {
+      min-width: 0;
+    }
+
+    .gearbox {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .gearbox .cluster {
+      display: grid;
+      grid-template-columns: repeat(4, 42px);
+      gap: 6px;
+    }
+
+    .pedals {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .pedal {
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.07);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pedal i {
+      width: 78%;
+      height: 6px;
+      border-radius: 999px;
+      display: block;
+      background: rgba(255,255,255,0.12);
+      overflow: hidden;
+    }
+
+    .pedal i::before {
+      content: "";
+      display: block;
+      height: 100%;
+      width: var(--level, 0%);
+      background: var(--gold-bright);
+    }
+
+    .seatpad {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .seat-mini {
+      height: 70px;
+      position: relative;
+      border-radius: 7px;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1), transparent 24%),
+        linear-gradient(135deg, #0a294a, #1b5d91);
+      border: 1px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+    }
+
+    .seat-mini::before,
+    .seat-mini::after {
+      content: "";
+      position: absolute;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.11);
+    }
+
+    .seat-mini::before {
+      width: 42%;
+      height: 56%;
+      left: 12%;
+      top: calc(18% - var(--seat-recline, 0px));
+      border-radius: 10px 10px 5px 5px;
+      transform: skewX(calc(var(--seat-recline, 0) * -0.25deg));
+    }
+
+    .seat-mini::after {
+      width: 57%;
+      height: 28%;
+      left: 21%;
+      bottom: 12%;
+      border-radius: 7px;
+    }
+
+    .seat-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 38px);
+      gap: 5px;
+    }
+
+    .car-art-wrap {
+      height: 260px;
+      position: relative;
+      margin: 6px 0 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(72, 94, 115, 0.55) 0%, rgba(23,31,39,0.52) 48%, rgba(18,21,24,0.72) 49%, rgba(12,13,15,0.82) 100%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 56px);
+      overflow: hidden;
+    }
+
+    .car-art-wrap::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 47px;
+      height: 2px;
+      background: rgba(240, 213, 142, 0.24);
+    }
+
+    .phantom-side {
+      position: absolute;
+      left: 7%;
+      right: 7%;
+      bottom: 50px;
+      height: 105px;
+    }
+
+    .body-shell {
+      position: absolute;
+      inset: 24px 24px 15px;
+      border-radius: 26px 16px 13px 11px / 34px 20px 12px 12px;
+      background:
+        linear-gradient(180deg, #fffdf4 0%, #ede9dc 53%, #d9d3c8 54%, #bdb7ab 100%);
+      border: 1px solid rgba(255,255,255,0.7);
+      box-shadow: inset 0 -16px 24px rgba(0,0,0,0.14), 0 12px 28px rgba(0,0,0,0.48);
+    }
+
+    .body-shell::before {
+      content: "";
+      position: absolute;
+      left: 23%;
+      top: -34px;
+      width: 50%;
+      height: 48px;
+      border-radius: 42px 20px 0 0;
+      background:
+        linear-gradient(180deg, #141821 0 45%, #090b10 46% 100%);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-bottom: 0;
+      clip-path: polygon(8% 100%, 19% 17%, 70% 0, 91% 100%);
+    }
+
+    .body-shell::after {
+      content: "";
+      position: absolute;
+      right: 3%;
+      top: 17px;
+      width: 9%;
+      height: 18px;
+      border-radius: 9px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.4), rgba(240, 213, 142, 0.7));
+      box-shadow: 0 0 16px rgba(240, 213, 142, 0.38);
+    }
+
+    .coach-line {
+      position: absolute;
+      left: 11%;
+      right: 7%;
+      top: 51%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(217,183,106,0.9), transparent);
+    }
+
+    .grille {
+      position: absolute;
+      right: 4%;
+      bottom: 27%;
+      width: 35px;
+      height: 45px;
+      border: 2px solid rgba(215,215,215,0.82);
+      border-radius: 4px 8px 8px 4px;
+      background: repeating-linear-gradient(90deg, rgba(255,255,255,0.62) 0 2px, rgba(0,0,0,0.16) 2px 5px);
+      box-shadow: inset 0 0 10px rgba(255,255,255,0.25);
+    }
+
+    .spirit {
+      position: absolute;
+      right: 8.2%;
+      bottom: 75%;
+      width: 12px;
+      height: 27px;
+      transform-origin: bottom center;
+    }
+
+    .spirit::before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 2px;
+      width: 7px;
+      height: 21px;
+      border-radius: 50% 50% 35% 35%;
+      background: linear-gradient(130deg, #fff, #c8c8c8 55%, #8f8f8f);
+      clip-path: polygon(50% 0, 100% 20%, 70% 100%, 50% 73%, 30% 100%, 0 20%);
+    }
+
+    .spirit.hidden {
+      transform: translateY(23px) scaleY(0.2);
+      opacity: 0.3;
+    }
+
+    .door {
+      position: absolute;
+      top: 6px;
+      bottom: 10px;
+      width: 16.5%;
+      border: 1px solid rgba(40,40,40,0.25);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0));
+      transform-origin: center left;
+      transition: transform 520ms cubic-bezier(.2,.9,.2,1), filter 520ms ease;
+    }
+
+    .door.front {
+      right: 37%;
+    }
+
+    .door.rear {
+      right: 53.5%;
+      transform-origin: center right;
+    }
+
+    .door.open.front {
+      transform: perspective(480px) rotateY(-58deg);
+      filter: brightness(0.9);
+    }
+
+    .door.open.rear {
+      transform: perspective(480px) rotateY(58deg);
+      filter: brightness(0.9);
+    }
+
+    .door::before {
+      content: "";
+      position: absolute;
+      left: 15%;
+      right: 15%;
+      top: 9px;
+      height: 23px;
+      border-radius: 5px 5px 2px 2px;
+      background: linear-gradient(180deg, rgba(27, 54, 76, 0.9), rgba(9,12,16,0.95));
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+
+    .wheel {
+      position: absolute;
+      width: 73px;
+      height: 73px;
+      bottom: -15px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, #090909 0 17%, var(--gold) 18% 22%, #111 23% 47%, #d6b461 48% 53%, #030303 54% 100%);
+      box-shadow: inset 0 0 0 9px #050505, inset 0 0 0 13px rgba(217,183,106,0.55), 0 12px 20px rgba(0,0,0,0.55);
+    }
+
+    .wheel::before {
+      content: "";
+      position: absolute;
+      inset: 17px;
+      border-radius: 50%;
+      background:
+        conic-gradient(from var(--wheel-rot, 0deg), rgba(255,255,255,0.75) 0 4deg, transparent 4deg 28deg, rgba(217,183,106,0.72) 28deg 34deg, transparent 34deg 60deg);
+      mask: radial-gradient(circle, transparent 0 29%, #000 30% 100%);
+    }
+
+    .wheel::after {
+      content: "RR";
+      position: absolute;
+      inset: 25px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #f5df9c;
+      background: #080808;
+      font: 700 10px Georgia, serif;
+      transform: rotate(calc(var(--wheel-rot, 0deg) * -1));
+    }
+
+    .wheel.front {
+      right: 10%;
+    }
+
+    .wheel.rear {
+      left: 13%;
+    }
+
+    .umbrella {
+      position: absolute;
+      left: 33%;
+      bottom: 49px;
+      width: 94px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #161b21, #e0d3ac 87%, #151515);
+      transform: translateX(var(--umbrella-out, 0px));
+      opacity: var(--umbrella-opacity, 0);
+      transition: transform 420ms ease, opacity 240ms ease;
+    }
+
+    .cockpit {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: min(980px, 92vw);
+      height: min(350px, 40vh);
+      transform: translateX(-50%);
+      display: none;
+      pointer-events: none;
+    }
+
+    body.view-drive .cockpit,
+    body.view-cockpit .cockpit {
+      display: block;
+    }
+
+    .dash {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 65%;
+      border-radius: 46% 46% 0 0 / 22% 22% 0 0;
+      background:
+        linear-gradient(180deg, rgba(20,27,34,0.98), rgba(8,10,12,0.99) 55%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 8px);
+      border-top: 1px solid rgba(255,255,255,0.13);
+      box-shadow: inset 0 20px 32px rgba(255,255,255,0.04), 0 -22px 60px rgba(0,0,0,0.24);
+    }
+
+    .wood-band {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 23%;
+      height: 28px;
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, #3b1d11, #714322 28%, #43200f 61%, #8a542b),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 11px);
+      border: 1px solid rgba(240, 213, 142, 0.25);
+    }
+
+    .gallery {
+      position: absolute;
+      right: 24%;
+      top: 33%;
+      width: 210px;
+      height: 48px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background:
+        linear-gradient(90deg, rgba(10,17,24,0.88), rgba(33,49,58,0.88)),
+        radial-gradient(circle at 20% 50%, rgba(240,213,142,0.38), transparent 35%);
+      overflow: hidden;
+    }
+
+    .gallery::before {
+      content: "";
+      position: absolute;
+      inset: 8px 14px;
+      border-radius: 5px;
+      border: 1px solid rgba(240, 213, 142, 0.26);
+      background:
+        radial-gradient(circle at 15% 50%, rgba(255,255,255,0.58), transparent 9%),
+        radial-gradient(circle at 45% 50%, rgba(47,121,174,0.6), transparent 14%),
+        radial-gradient(circle at 72% 50%, rgba(240,213,142,0.5), transparent 12%);
+    }
+
+    .wheel-steer {
+      position: absolute;
+      left: 24%;
+      bottom: 23%;
+      width: 168px;
+      height: 168px;
+      border-radius: 50%;
+      border: 15px solid #090a0d;
+      background: radial-gradient(circle, #10151c 0 26%, #d8bd73 27% 30%, transparent 31%);
+      box-shadow: 0 9px 30px rgba(0,0,0,0.64), inset 0 0 0 1px rgba(255,255,255,0.16);
+      transform: rotate(calc(var(--steer, 0) * 1deg));
+    }
+
+    .wheel-steer::before {
+      content: "RR";
+      position: absolute;
+      inset: 50px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--gold-bright);
+      background: #07080b;
+      border: 1px solid rgba(240, 213, 142, 0.34);
+      font-family: Georgia, serif;
+      font-weight: 800;
+    }
+
+    .wheel-steer::after {
+      content: "";
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      top: 50%;
+      height: 9px;
+      border-radius: 999px;
+      background: #0d1118;
+      transform: translateY(-50%);
+      box-shadow: 57px -42px 0 -1px #0d1118, 57px 42px 0 -1px #0d1118;
+    }
+
+    .seat-view {
+      position: absolute;
+      left: 50%;
+      bottom: 9%;
+      width: 200px;
+      height: 210px;
+      transform: translateX(-50%);
+      opacity: 0.93;
+    }
+
+    .seat-back,
+    .seat-base {
+      position: absolute;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.08), transparent 22%),
+        linear-gradient(180deg, #165080, #0d3158);
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), 0 14px 32px rgba(0,0,0,0.28);
+    }
+
+    .seat-back {
+      left: 32px;
+      top: 10px;
+      width: 126px;
+      height: 132px;
+      border-radius: 34px 34px 12px 12px;
+      transform-origin: bottom center;
+      transform: rotate(calc(var(--driver-recline, 0deg) * -1));
+    }
+
+    .seat-base {
+      left: 18px;
+      bottom: 22px;
+      width: 158px;
+      height: 74px;
+      border-radius: 20px 20px 30px 30px;
+    }
+
+    .seat-back::before,
+    .seat-base::before {
+      content: "";
+      position: absolute;
+      inset: 11px;
+      border-radius: inherit;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: repeating-linear-gradient(90deg, transparent 0 16px, rgba(255,255,255,0.055) 16px 18px);
+    }
+
+    .belt {
+      position: absolute;
+      width: 10px;
+      height: 178px;
+      left: 74px;
+      top: 17px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #020304, #222832, #060709);
+      transform-origin: top center;
+      transform: rotate(-42deg) translate(-145px, -24px);
+      opacity: 0;
+      transition: transform 760ms cubic-bezier(.2,.9,.2,1), opacity 240ms ease;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .belt.latched {
+      opacity: 1;
+      transform: rotate(-42deg) translate(0, 0);
+    }
+
+    .headliner {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: min(880px, 90vw);
+      height: 120px;
+      transform: translateX(-50%);
+      border-radius: 0 0 48% 48% / 0 0 30% 30%;
+      opacity: var(--stars-opacity, 0.15);
+      background:
+        radial-gradient(circle at 10% 20%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 18% 42%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 31% 16%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 40% 48%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 56% 22%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 67% 40%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 75% 18%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 86% 44%, #fff 0 1px, transparent 1.5px),
+        linear-gradient(180deg, rgba(5,7,12,0.72), transparent);
+      pointer-events: none;
+    }
+
+    .analog-cluster {
+      position: absolute;
+      left: 42%;
+      top: 28%;
+      width: 156px;
+      height: 78px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .dial {
+      position: relative;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: radial-gradient(circle, #111822, #050608 70%);
+      box-shadow: inset 0 0 16px rgba(255,255,255,0.04);
+    }
+
+    .dial::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      width: 2px;
+      height: 36%;
+      background: var(--gold-bright);
+      transform-origin: bottom center;
+      transform: translateX(-50%) rotate(var(--needle, -60deg));
+      border-radius: 999px;
+    }
+
+    .dial span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 7px;
+      text-align: center;
+      font-size: 8px;
+      color: var(--muted);
+    }
+
+    .rear-suite {
+      height: 340px;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(6,8,12,0.95), rgba(13,16,20,0.85)),
+        radial-gradient(circle at 50% 18%, rgba(255,255,255,0.12), transparent 28%);
+    }
+
+    .rear-suite .stars {
+      position: absolute;
+      inset: 0 0 58%;
+      opacity: var(--stars-opacity, 0.2);
+      background:
+        radial-gradient(circle at 10% 20%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 24% 58%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 39% 34%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 52% 19%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 66% 46%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 74% 22%, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle at 91% 52%, #fff 0 1px, transparent 1.5px);
+    }
+
+    .rear-seat {
+      position: absolute;
+      bottom: 34px;
+      width: 38%;
+      height: 164px;
+      border-radius: 36px 36px 18px 18px;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 30px, rgba(255,255,255,0.08) 30px 32px),
+        linear-gradient(180deg, #1b6097, #0d3158);
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: inset 0 -18px 38px rgba(0,0,0,0.21), 0 18px 40px rgba(0,0,0,0.36);
+      transform-origin: bottom center;
+      transform: rotate(calc(var(--rear-recline, 0deg) * -1));
+    }
+
+    .rear-seat.left {
+      left: 8%;
+    }
+
+    .rear-seat.right {
+      right: 8%;
+    }
+
+    .picnic {
+      position: absolute;
+      left: 24%;
+      right: 24%;
+      top: 47%;
+      height: 48px;
+      border-radius: 5px;
+      background: linear-gradient(180deg, #764321, #3e1f10);
+      border: 1px solid rgba(240,213,142,0.24);
+      transform: rotateX(var(--table-angle, 83deg));
+      transform-origin: top center;
+      transition: transform 420ms ease;
+    }
+
+    .screens {
+      position: absolute;
+      left: 28%;
+      right: 28%;
+      top: 24%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      opacity: var(--screens-opacity, 0.22);
+      transition: opacity 260ms ease;
+    }
+
+    .screens i {
+      height: 56px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 5px;
+      background:
+        linear-gradient(135deg, rgba(47,121,174,0.55), rgba(5,7,10,0.92)),
+        repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,255,255,0.06) 18px 19px);
+    }
+
+    .divider-glass {
+      position: absolute;
+      left: 48.5%;
+      top: var(--divider-top, 110%);
+      width: 3%;
+      bottom: 0;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-bottom: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(47,121,174,0.22), rgba(255,255,255,0.04));
+      transition: top 520ms ease;
+    }
+
+    .cooler {
+      position: absolute;
+      left: 44%;
+      right: 44%;
+      bottom: 18px;
+      height: 56px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,0.13), rgba(50,58,62,0.82));
+      box-shadow: inset 0 0 18px rgba(189,235,255,0.12);
+    }
+
+    .systems-visual {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .drivetrain {
+      min-height: 250px;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: 8px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+    }
+
+    .engine-block {
+      position: absolute;
+      left: 16px;
+      top: 70px;
+      width: 110px;
+      height: 86px;
+      border-radius: 12px;
+      border: 1px solid rgba(240,213,142,0.34);
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.09) 0 7px, transparent 7px 16px),
+        linear-gradient(135deg, #252b33, #0e1117);
+    }
+
+    .engine-block::before,
+    .engine-block::after {
+      content: "";
+      position: absolute;
+      top: 16px;
+      width: 35px;
+      height: 55px;
+      border-radius: 8px;
+      background: #101820;
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .engine-block::before {
+      left: 14px;
+      transform: rotate(-12deg);
+    }
+
+    .engine-block::after {
+      right: 14px;
+      transform: rotate(12deg);
+    }
+
+    .gear-stack {
+      position: absolute;
+      left: 150px;
+      top: 40px;
+      width: 86px;
+      height: 150px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      display: grid;
+      grid-template-rows: repeat(8, 1fr);
+      gap: 2px;
+      padding: 6px;
+    }
+
+    .gear-stack i {
+      display: grid;
+      place-items: center;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-size: 10px;
+      font-style: normal;
+    }
+
+    .gear-stack i.active {
+      background: rgba(240,213,142,0.38);
+      color: #fff6d2;
+    }
+
+    .shaft {
+      position: absolute;
+      left: 120px;
+      right: 72px;
+      top: 118px;
+      height: 9px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(240,213,142,0.25), rgba(255,255,255,0.4), rgba(240,213,142,0.25));
+      transform-origin: left center;
+      transform: rotate(var(--shaft-angle, 0deg));
+    }
+
+    .axle-wheel {
+      position: absolute;
+      right: 18px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #050506 0 44%, #d6b461 45% 54%, #050506 55% 100%);
+    }
+
+    .axle-wheel.top {
+      top: 70px;
+    }
+
+    .axle-wheel.bottom {
+      bottom: 58px;
+    }
+
+    .suspension {
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 250px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+    }
+
+    .ride-window {
+      height: 132px;
+      position: relative;
+      border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.11);
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(63,92,113,0.28), transparent),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 18px);
+    }
+
+    .road-wave,
+    .cabin-wave {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      top: 50%;
+      background: var(--amber);
+      transform: translateY(var(--wave-y, 0px));
+      box-shadow: 0 0 11px currentColor;
+    }
+
+    .cabin-wave {
+      color: var(--green);
+      background: var(--green);
+      top: 32%;
+    }
+
+    .glass-test {
+      position: absolute;
+      right: 30px;
+      bottom: 18px;
+      width: 30px;
+      height: 48px;
+      border: 1px solid rgba(255,255,255,0.45);
+      border-top: 0;
+      border-radius: 0 0 9px 9px;
+      transform: rotate(var(--glass-tilt, 0deg));
+      transform-origin: bottom center;
+    }
+
+    .glass-test::before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      bottom: 4px;
+      height: 45%;
+      background: rgba(109,211,255,0.42);
+      border-radius: 0 0 7px 7px;
+    }
+
+    .smart-screen {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      min-height: 380px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      background: #06090d;
+      overflow: hidden;
+    }
+
+    .map {
+      position: relative;
+      min-height: 380px;
+      background:
+        linear-gradient(30deg, transparent 0 48%, rgba(240,213,142,0.22) 48.4% 49.5%, transparent 49.9%),
+        linear-gradient(120deg, transparent 0 38%, rgba(47,121,174,0.24) 38.4% 39.8%, transparent 40.2%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 38px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 42px),
+        radial-gradient(circle at 62% 38%, rgba(104,211,145,0.16), transparent 20%),
+        #09111a;
+    }
+
+    .map .route {
+      position: absolute;
+      left: 14%;
+      right: 22%;
+      top: 42%;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--gold), var(--green));
+      transform: rotate(-21deg);
+      box-shadow: 0 0 16px rgba(240,213,142,0.38);
+    }
+
+    .map .car-dot {
+      position: absolute;
+      left: var(--map-x, 32%);
+      top: var(--map-y, 58%);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 3px solid var(--gold);
+      box-shadow: 0 0 18px rgba(240,213,142,0.7);
+      transform: translate(-50%, -50%);
+    }
+
+    .computer-controls {
+      padding: 12px;
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+    }
+
+    .destination-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .status-list {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 118px;
+      transform: translateX(-50%) translateY(20px);
+      min-width: min(430px, calc(100vw - 24px));
+      max-width: min(640px, calc(100vw - 24px));
+      padding: 11px 13px;
+      border-radius: 8px;
+      border: 1px solid rgba(240,213,142,0.35);
+      background: rgba(10, 12, 15, 0.88);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+      color: var(--ink);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      font-size: 13px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .traffic-indicator {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      margin-right: 5px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--gold);
+    }
+
+    .voice {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px;
+    }
+
+    .voice input {
+      min-width: 0;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 8px 9px;
+    }
+
+    .mobile-pad {
+      position: fixed;
+      left: 12px;
+      bottom: 118px;
+      display: none;
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(2, 46px);
+      gap: 7px;
+      pointer-events: auto;
+    }
+
+    .mobile-pad button {
+      padding: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      #cityCanvas {
+        min-height: 100vh;
+      }
+
+      .app {
+        min-height: 100vh;
+      }
+
+      .topbar,
+      .bottombar {
+        grid-template-columns: 1fr;
+      }
+
+      .brand {
+        min-height: 0;
+      }
+
+      .drive-help {
+        display: none;
+      }
+
+      .hud {
+        top: 110px;
+      }
+
+      .mode-panel {
+        left: 12px;
+        right: 12px;
+        width: auto;
+      }
+
+      .console {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .systems-visual,
+      .smart-screen {
+        grid-template-columns: 1fr;
+      }
+
+      .readout-grid,
+      .control-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .mobile-pad {
+        display: grid;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .topbar {
+        padding: 8px;
+      }
+
+      .tabs,
+      .quick {
+        gap: 5px;
+        padding: 7px;
+      }
+
+      .tabs button {
+        flex-basis: 76px;
+        padding-inline: 7px;
+      }
+
+      .hud {
+        width: calc(100vw - 16px);
+        left: 8px;
+        top: 158px;
+      }
+
+      .mode-panel {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+      }
+
+      .bottombar {
+        padding: 0 8px 8px;
+      }
+
+      .cockpit {
+        height: 280px;
+      }
+
+      .wheel-steer {
+        left: 10%;
+        width: 122px;
+        height: 122px;
+      }
+
+      .seat-view {
+        left: 60%;
+        width: 150px;
+      }
+    }
+  </style>
+</head>
+<body class="view-drive">
+  <canvas id="cityCanvas" aria-label="Interactive city driving canvas"></canvas>
+
+  <div class="cockpit" aria-hidden="true">
+    <div class="headliner" id="headliner"></div>
+    <div class="dash">
+      <div class="wood-band"></div>
+      <div class="gallery"></div>
+      <div class="analog-cluster">
+        <div class="dial" id="powerDial"><span>POWER</span></div>
+        <div class="dial" id="rpmDial"><span>RPM</span></div>
+        <div class="dial" id="comfortDial"><span>RIDE</span></div>
+      </div>
+      <div class="wheel-steer" id="steeringWheel"></div>
+      <div class="seat-view">
+        <div class="seat-back"></div>
+        <div class="seat-base"></div>
+        <div class="belt" id="belt"></div>
+      </div>
+    </div>
+  </div>
+
+  <main class="app">
+    <header class="topbar">
+      <section class="brand">
+        <div class="mark">RR</div>
+        <h1>Rolls Royce Phantom World</h1>
+        <p>V12 city simulator with coach doors, blue leather cabin, chauffeur mode, 8-speed driveline, and active ride physics.</p>
+      </section>
+
+      <nav class="tabs" aria-label="View modes">
+        <button class="active" data-view="drive">Drive</button>
+        <button data-view="exterior">Exterior</button>
+        <button data-view="cockpit">Cockpit</button>
+        <button data-view="rear">Rear Suite</button>
+        <button data-view="systems">Systems</button>
+        <button data-view="computer">Computer</button>
+      </nav>
+
+      <section class="quick" aria-label="Quick controls">
+        <button id="beltBtn" title="Self seatbelt">Belt</button>
+        <button id="doorAllBtn" title="Power coach doors">Doors</button>
+        <button id="magicBtn" class="active" title="Magic Carpet Ride active suspension">Ride</button>
+        <button id="chauffeurBtn" title="Hire chauffeur">Chauffeur</button>
+        <button id="nightBtn" title="Night vision">Night</button>
+        <button id="resetBtn" title="Reset car">Reset</button>
+      </section>
+    </header>
+
+    <section class="center-stage">
+      <aside class="hud">
+        <div class="speed-row">
+          <div>
+            <div class="speed" id="speedReadout">0</div>
+            <div class="unit">mph</div>
+          </div>
+          <div class="gear-tile" id="gearReadout">P</div>
+        </div>
+        <div class="meter-grid">
+          <div class="meter">
+            <label><span>RPM</span><span id="rpmText">650</span></label>
+            <div class="bar"><i id="rpmBar"></i></div>
+          </div>
+          <div class="meter">
+            <label><span>Torque</span><span id="torqueText">0 Nm</span></label>
+            <div class="bar"><i id="torqueBar"></i></div>
+          </div>
+          <div class="meter">
+            <label><span>Throttle</span><span id="throttleText">0%</span></label>
+            <div class="bar"><i id="throttleBar"></i></div>
+          </div>
+          <div class="meter">
+            <label><span>Brake</span><span id="brakeText">0%</span></label>
+            <div class="bar"><i id="brakeBar"></i></div>
+          </div>
+        </div>
+        <div class="warning" id="warning">Select D, close doors, latch belt, then drive.</div>
+      </aside>
+
+      <aside class="drive-help">
+        <strong>Keyboard</strong><br>
+        W/Up accelerate, S/Down brake, A/D steer, Space brake, P/R/N/D gears. The car auto-closes doors when Drive is selected and can summon a chauffeur from the computer.
+      </aside>
+
+      <section class="mode-panel panel-exterior">
+        <div class="panel-title">
+          <h2>Exterior Walkaround</h2>
+          <span class="small"><span class="traffic-indicator"></span><span id="paintStatus">White body, dark roof, gold coachline</span></span>
+        </div>
+        <div class="car-art-wrap">
+          <div class="phantom-side" id="phantomSide">
+            <div class="body-shell">
+              <div class="coach-line"></div>
+              <div class="door rear" id="rearDoorArt"></div>
+              <div class="door front" id="frontDoorArt"></div>
+              <div class="grille"></div>
+              <div class="spirit" id="spiritArt"></div>
+              <div class="umbrella" id="umbrellaArt"></div>
+            </div>
+            <div class="wheel rear"></div>
+            <div class="wheel front"></div>
+          </div>
+        </div>
+        <div class="control-grid">
+          <button data-door="driver">Driver Door</button>
+          <button data-door="rearLeft">Rear Coach Door</button>
+          <button data-door="all">All Doors</button>
+          <button id="umbrellaBtn">Umbrella</button>
+          <button id="spiritBtn">Spirit Lift</button>
+          <button id="lightsBtn">Matrix Lights</button>
+        </div>
+        <div class="divider"></div>
+        <div class="readout-grid">
+          <div class="readout"><b id="doorState">Closed</b><span>coach doors</span></div>
+          <div class="readout"><b id="wheelState">Level</b><span>wheel centers</span></div>
+          <div class="readout"><b>22 in</b><span>black/gold wheels</span></div>
+          <div class="readout"><b id="lightState">Auto</b><span>laser/LED beam</span></div>
+        </div>
+      </section>
+
+      <section class="mode-panel panel-cockpit">
+        <div class="panel-title">
+          <h2>Front Cockpit</h2>
+          <span class="small" id="cockpitStatus">Blue leather, wood veneer, glass Gallery fascia</span>
+        </div>
+        <div class="readout-grid">
+          <div class="readout"><b id="frontSeatRead">0 deg</b><span>seat recline</span></div>
+          <div class="readout"><b id="climateRead">22 C</b><span>four-zone climate</span></div>
+          <div class="readout"><b id="beltRead">Open</b><span>self seatbelt</span></div>
+          <div class="readout"><b id="soundRead">Quiet</b><span>bespoke audio</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="control-grid">
+          <button id="frontForward">Seat +</button>
+          <button id="frontBack">Seat -</button>
+          <button id="memoryBtn">Memory 1</button>
+          <button id="heatBtn">Heat</button>
+          <button id="coolBtn">Cool</button>
+          <button id="massageBtn">Massage</button>
+          <button id="audioBtn">Studio</button>
+          <button id="starsBtn">Stars</button>
+          <button id="galleryBtn">Gallery</button>
+        </div>
+      </section>
+
+      <section class="mode-panel panel-rear">
+        <div class="panel-title">
+          <h2>Rear Suite</h2>
+          <span class="small" id="rearStatus">Individual lounge seats and privacy controls</span>
+        </div>
+        <div class="rear-suite">
+          <div class="stars"></div>
+          <div class="screens"><i></i><i></i></div>
+          <div class="picnic" id="picnicArt"></div>
+          <div class="rear-seat left"></div>
+          <div class="rear-seat right"></div>
+          <div class="divider-glass" id="dividerArt"></div>
+          <div class="cooler"></div>
+        </div>
+        <div class="control-grid">
+          <button id="rearReclineBtn">Recline</button>
+          <button id="rearMassageBtn">Massage</button>
+          <button id="tableBtn">Tables</button>
+          <button id="screenBtn">Theatre</button>
+          <button id="privacyBtn">Privacy</button>
+          <button id="coolerBtn">Cooler</button>
+        </div>
+      </section>
+
+      <section class="mode-panel panel-systems">
+        <div class="panel-title">
+          <h2>V12, Transmission, Magic Carpet Ride</h2>
+          <span class="small" id="satStatus">Satellite-aided shift logic watching the road ahead</span>
+        </div>
+        <div class="systems-visual">
+          <div class="drivetrain">
+            <div class="engine-block"></div>
+            <div class="gear-stack" id="gearStack">
+              <i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i>
+            </div>
+            <div class="shaft" id="shaft"></div>
+            <div class="axle-wheel top"></div>
+            <div class="axle-wheel bottom"></div>
+          </div>
+          <div class="suspension">
+            <div class="ride-window">
+              <div class="road-wave" id="roadWave"></div>
+              <div class="cabin-wave" id="cabinWave"></div>
+              <div class="glass-test" id="glassTest"></div>
+            </div>
+            <div class="divider"></div>
+            <div class="readout-grid">
+              <div class="readout"><b id="rideRead">Soft</b><span>damper mode</span></div>
+              <div class="readout"><b id="cabinRead">0.00 g</b><span>cabin heave</span></div>
+              <div class="readout"><b id="roadRead">0.00 g</b><span>road input</span></div>
+              <div class="readout"><b id="shiftRead">SAT</b><span>shift map</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mode-panel panel-computer">
+        <div class="panel-title">
+          <h2>Smart Computer</h2>
+          <span class="small" id="computerStatus">Connected drive, chauffeur, route, cabin, safety</span>
+        </div>
+        <div class="smart-screen">
+          <div class="map">
+            <div class="route"></div>
+            <div class="car-dot" id="mapDot"></div>
+          </div>
+          <div class="computer-controls">
+            <div class="destination-grid">
+              <button data-destination="Opera House">Opera</button>
+              <button data-destination="Royal Hotel">Hotel</button>
+              <button data-destination="Marina">Marina</button>
+              <button data-destination="Gallery">Gallery</button>
+              <button data-destination="Airport">Airport</button>
+              <button data-destination="Private Club">Club</button>
+            </div>
+            <button id="summonBtn">Hire Chauffeur - Unlimited Dollars</button>
+            <div class="voice">
+              <input id="voiceInput" autocomplete="off" placeholder="Try: close doors, drive to marina, comfort mode">
+              <button id="voiceBtn">Send</button>
+            </div>
+            <div class="status-list">
+              <div><span>Navigation</span><strong id="navRead">Cruise loop</strong></div>
+              <div><span>Driver</span><strong id="driverRead">Owner</strong></div>
+              <div><span>Safety</span><strong id="safetyRead">Monitoring</strong></div>
+              <div><span>Night vision</span><strong id="nightRead">Off</strong></div>
+              <div><span>Lane assist</span><strong id="laneRead">Ready</strong></div>
+              <div><span>Adaptive cruise</span><strong id="cruiseRead">Off</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer class="bottombar">
+      <section class="console" aria-label="Vehicle function controls">
+        <button id="laneBtn">Lane</button>
+        <button id="cruiseBtn">Cruise</button>
+        <button id="cameraBtn">Camera</button>
+        <button id="hazardBtn">Hazard</button>
+        <button id="hornBtn">Horn</button>
+      </section>
+
+      <section class="gearbox" aria-label="Gear selector and pedals">
+        <div class="cluster">
+          <button data-gear="P" class="active">P</button>
+          <button data-gear="R">R</button>
+          <button data-gear="N">N</button>
+          <button data-gear="D">D</button>
+        </div>
+        <div class="pedals">
+          <div class="pedal">Throttle <i id="throttlePedal"></i></div>
+          <div class="pedal">Brake <i id="brakePedal"></i></div>
+        </div>
+      </section>
+
+      <section class="seatpad" aria-label="Seat quick controls">
+        <div>
+          <div class="small">Active seat comfort</div>
+          <div class="seat-mini" id="seatMini"></div>
+        </div>
+        <div class="seat-actions">
+          <button id="seatHeatQuick">H</button>
+          <button id="seatCoolQuick">C</button>
+          <button id="seatMassageQuick">M</button>
+          <button id="seatPlusQuick">+</button>
+          <button id="seatMinusQuick">-</button>
+          <button id="seatResetQuick">0</button>
+        </div>
+      </section>
+    </footer>
+  </main>
+
+  <div class="mobile-pad" aria-label="Touch driving controls">
+    <span></span><button data-pad="up">Up</button><span></span>
+    <button data-pad="left">Left</button><button data-pad="down">Brake</button><button data-pad="right">Right</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    "use strict";
+
+    const canvas = document.getElementById("cityCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const SPEC = {
+      massKg: 2560,
+      peakTorqueNm: 900,
+      peakPowerKw: 420,
+      idleRpm: 650,
+      redlineRpm: 5500,
+      finalDrive: 2.81,
+      wheelRadiusM: 0.365,
+      dragCd: 0.37,
+      frontalAreaM2: 2.78,
+      rollingResistance: 0.0125,
+      topSpeedMps: 155 * 0.44704,
+      brakeMaxMps2: 8.6,
+      gearRatios: [5.00, 3.20, 2.14, 1.72, 1.31, 1.00, 0.82, 0.64],
+      reverseRatio: 3.48
+    };
+
+    const state = {
+      time: 0,
+      lastTime: performance.now(),
+      speedMps: 0,
+      distanceM: 0,
+      laneOffset: 0,
+      steer: 0,
+      throttle: 0,
+      brake: 0,
+      rpm: SPEC.idleRpm,
+      torqueNm: 0,
+      tractiveForce: 0,
+      gearMode: "P",
+      autoGear: 1,
+      wheelRotation: 0,
+      doors: {
+        driver: false,
+        passenger: false,
+        rearLeft: false,
+        rearRight: false
+      },
+      beltLatched: false,
+      magicRide: true,
+      chauffeur: false,
+      chauffeurPaid: 0,
+      destination: "Cruise loop",
+      routeProgress: 0,
+      nightVision: false,
+      laneAssist: true,
+      adaptiveCruise: false,
+      cameraScan: true,
+      hazards: false,
+      horn: false,
+      lights: true,
+      spiritUp: true,
+      umbrellaOut: false,
+      heat: false,
+      cool: false,
+      massage: false,
+      audioStudio: false,
+      galleryLit: true,
+      stars: true,
+      rearRecline: 0,
+      rearMassage: false,
+      tables: false,
+      screens: false,
+      privacy: false,
+      cooler: true,
+      frontRecline: 0,
+      climate: 22,
+      roadInputG: 0,
+      cabinHeaveG: 0,
+      turnAhead: 0,
+      warning: "",
+      toastTimer: 0,
+      keys: Object.create(null),
+      traffic: [],
+      buildings: []
+    };
+
+    const el = {};
+    const ids = [
+      "speedReadout", "gearReadout", "rpmText", "rpmBar", "torqueText", "torqueBar",
+      "throttleText", "throttleBar", "brakeText", "brakeBar", "warning", "belt",
+      "beltRead", "doorState", "wheelState", "lightState", "paintStatus", "spiritArt",
+      "umbrellaArt", "frontDoorArt", "rearDoorArt", "phantomSide", "steeringWheel",
+      "frontSeatRead", "climateRead", "soundRead", "picnicArt", "dividerArt",
+      "rearStatus", "gearStack", "shaft", "roadWave", "cabinWave", "glassTest",
+      "rideRead", "cabinRead", "roadRead", "shiftRead", "satStatus", "mapDot",
+      "navRead", "driverRead", "safetyRead", "nightRead", "laneRead", "cruiseRead",
+      "computerStatus", "voiceInput", "toast", "throttlePedal", "brakePedal", "seatMini",
+      "powerDial", "rpmDial", "comfortDial", "headliner", "cockpitStatus"
+    ];
+
+    for (const id of ids) {
+      el[id] = document.getElementById(id);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * clamp(t, 0, 1);
+    }
+
+    function mph(mps) {
+      return mps / 0.44704;
+    }
+
+    function showToast(message) {
+      el.toast.textContent = message;
+      el.toast.classList.add("show");
+      state.toastTimer = 2.4;
+    }
+
+    function resizeCanvas() {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      canvas.width = Math.floor(innerWidth * dpr);
+      canvas.height = Math.floor(innerHeight * dpr);
+      canvas.style.width = `${innerWidth}px`;
+      canvas.style.height = `${innerHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function seedWorld() {
+      state.traffic = [];
+      state.buildings = [];
+      for (let i = 0; i < 18; i += 1) {
+        state.traffic.push({
+          lane: (i % 3) - 1,
+          z: 85 + i * 74 + Math.random() * 60,
+          speed: 8 + Math.random() * 13,
+          hue: 190 + Math.random() * 120
+        });
+      }
+      for (let i = 0; i < 64; i += 1) {
+        state.buildings.push({
+          side: i % 2 === 0 ? -1 : 1,
+          z: i * 45 + Math.random() * 40,
+          width: 35 + Math.random() * 42,
+          height: 80 + Math.random() * 190,
+          lit: Math.random() > 0.32,
+          hue: 205 + Math.random() * 70
+        });
+      }
+    }
+
+    seedWorld();
+
+    function engineTorqueAtRpm(rpm) {
+      if (rpm < 800) return lerp(420, 620, rpm / 800);
+      if (rpm < 1200) return lerp(620, 820, (rpm - 800) / 400);
+      if (rpm < 1700) return lerp(820, 900, (rpm - 1200) / 500);
+      if (rpm <= 4000) return 900;
+      const powerLimited = (SPEC.peakPowerKw * 1000) / (rpm * Math.PI * 2 / 60);
+      return clamp(powerLimited, 650, 900);
+    }
+
+    function anyDoorOpen() {
+      return Object.values(state.doors).some(Boolean);
+    }
+
+    function driveAllowed() {
+      return state.gearMode === "D" || state.gearMode === "R";
+    }
+
+    function setGear(mode) {
+      if (!["P", "R", "N", "D"].includes(mode)) return;
+      if (mode === "P" && Math.abs(state.speedMps) > 0.7) {
+        showToast("Park is locked until the Phantom is almost stopped.");
+        return;
+      }
+      state.gearMode = mode;
+      if (mode === "D") {
+        if (anyDoorOpen()) {
+          closeAllDoors(true);
+          showToast("Power coach doors closing before Drive.");
+        }
+        if (!state.beltLatched) {
+          latchBelt(true);
+          showToast("Self seatbelt latched for the driver.");
+        }
+      }
+      updateGearButtons();
+    }
+
+    function updateGearButtons() {
+      document.querySelectorAll("[data-gear]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.gear === state.gearMode);
+      });
+    }
+
+    function latchBelt(force) {
+      state.beltLatched = force === undefined ? !state.beltLatched : Boolean(force);
+      el.belt.classList.toggle("latched", state.beltLatched);
+      showToast(state.beltLatched ? "Seatbelt arm reached across and latched." : "Seatbelt released.");
+    }
+
+    function closeAllDoors(silent) {
+      state.doors.driver = false;
+      state.doors.passenger = false;
+      state.doors.rearLeft = false;
+      state.doors.rearRight = false;
+      if (!silent) showToast("All power coach doors closed.");
+      updateDoorArt();
+    }
+
+    function toggleDoor(which) {
+      const wantsOpen = which === "all" ? !anyDoorOpen() : !state.doors[which];
+      if (wantsOpen && Math.abs(state.speedMps) > 0.45) {
+        showToast("Power doors remain locked while the Phantom is moving.");
+        return;
+      }
+      if (which === "all") {
+        const next = !anyDoorOpen();
+        for (const key of Object.keys(state.doors)) state.doors[key] = next;
+        showToast(next ? "All doors opened in coach-door presentation." : "All power doors closed.");
+      } else if (state.doors[which] !== undefined) {
+        state.doors[which] = !state.doors[which];
+        showToast(`${doorLabel(which)} ${state.doors[which] ? "opened" : "closed"} by power actuator.`);
+      }
+      updateDoorArt();
+    }
+
+    function doorLabel(which) {
+      return ({
+        driver: "Driver door",
+        passenger: "Passenger door",
+        rearLeft: "Rear coach door",
+        rearRight: "Rear coach door"
+      })[which] || "Door";
+    }
+
+    function updateDoorArt() {
+      const frontOpen = state.doors.driver || state.doors.passenger;
+      const rearOpen = state.doors.rearLeft || state.doors.rearRight;
+      el.frontDoorArt.classList.toggle("open", frontOpen);
+      el.rearDoorArt.classList.toggle("open", rearOpen);
+    }
+
+    function setView(view) {
+      document.body.className = `view-${view}`;
+      document.querySelectorAll("[data-view]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.view === view);
+      });
+    }
+
+    function processVoice() {
+      const text = el.voiceInput.value.trim().toLowerCase();
+      if (!text) return;
+      if (text.includes("close")) closeAllDoors();
+      if (text.includes("open") && text.includes("door")) toggleDoor("all");
+      if (text.includes("belt")) latchBelt(true);
+      if (text.includes("chauffeur") || text.includes("driver")) toggleChauffeur(true);
+      if (text.includes("comfort") || text.includes("ride")) {
+        state.magicRide = true;
+        showToast("Magic Carpet Ride set to comfort.");
+      }
+      if (text.includes("sport")) {
+        state.magicRide = false;
+        showToast("Dampers switched to firmer direct response.");
+      }
+      for (const destination of ["opera", "hotel", "marina", "gallery", "airport", "club"]) {
+        if (text.includes(destination)) {
+          const label = destination === "club" ? "Private Club" : destination[0].toUpperCase() + destination.slice(1);
+          selectDestination(label);
+          toggleChauffeur(true);
+          setGear("D");
+          break;
+        }
+      }
+      el.voiceInput.value = "";
+    }
+
+    function toggleChauffeur(force) {
+      const next = force === undefined ? !state.chauffeur : Boolean(force);
+      state.chauffeur = next;
+      if (next) {
+        state.chauffeurPaid += 1000;
+        closeAllDoors(true);
+        latchBelt(true);
+        setGear("D");
+        state.adaptiveCruise = true;
+        showToast("Chauffeur hired. Unlimited dollars approved. He is now driving smoothly.");
+      } else {
+        showToast("Chauffeur dismissed. Owner driving restored.");
+      }
+    }
+
+    function selectDestination(destination) {
+      state.destination = destination;
+      state.routeProgress = 0;
+      showToast(`Navigation set to ${destination}.`);
+    }
+
+    function updateInputs(dt) {
+      const throttleTarget =
+        state.keys.KeyW || state.keys.ArrowUp ? 1 :
+        state.chauffeur ? chauffeurThrottleTarget() :
+        state.adaptiveCruise && state.gearMode === "D" ? adaptiveCruiseTarget() : 0;
+
+      const brakeTarget =
+        state.keys.Space || state.keys.KeyS || state.keys.ArrowDown ? 1 :
+        state.chauffeur ? chauffeurBrakeTarget() : 0;
+
+      const steerInput =
+        (state.keys.KeyD || state.keys.ArrowRight ? 1 : 0) -
+        (state.keys.KeyA || state.keys.ArrowLeft ? 1 : 0);
+
+      let steerTarget = steerInput;
+      if (state.chauffeur) {
+        steerTarget = Math.sin(state.distanceM / 180) * 0.22 - state.laneOffset * 0.35;
+      } else if (state.laneAssist && Math.abs(steerInput) < 0.1 && state.speedMps > 5) {
+        steerTarget += -state.laneOffset * 0.18;
+      }
+
+      state.throttle = lerp(state.throttle, throttleTarget, 1 - Math.pow(0.0009, dt));
+      state.brake = lerp(state.brake, brakeTarget, 1 - Math.pow(0.0014, dt));
+      state.steer = lerp(state.steer, clamp(steerTarget, -1, 1), 1 - Math.pow(0.001, dt));
+    }
+
+    function chauffeurThrottleTarget() {
+      const target = state.destination === "Airport" ? 26 : 18;
+      const error = target - state.speedMps;
+      const slowForTurn = Math.abs(state.turnAhead) > 0.72 ? 0.35 : 1;
+      return clamp(error / 8, 0, 0.72) * slowForTurn;
+    }
+
+    function chauffeurBrakeTarget() {
+      const target = state.destination === "Airport" ? 26 : 18;
+      const turnBrake = Math.abs(state.turnAhead) > 0.78 && state.speedMps > 15 ? 0.25 : 0;
+      return Math.max(clamp((state.speedMps - target) / 8, 0, 0.45), turnBrake);
+    }
+
+    function adaptiveCruiseTarget() {
+      const target = 18;
+      return clamp((target - state.speedMps) / 9, 0, 0.55);
+    }
+
+    function updateTransmission() {
+      if (state.gearMode !== "D") return;
+
+      const ratio = SPEC.gearRatios[state.autoGear - 1];
+      const wheelRps = state.speedMps / (2 * Math.PI * SPEC.wheelRadiusM);
+      const rpm = Math.max(SPEC.idleRpm, wheelRps * ratio * SPEC.finalDrive * 60);
+      const turnHold = Math.abs(state.turnAhead) > 0.68 && state.cameraScan;
+      const shiftUp = state.throttle > 0.68 ? 4550 : 2450 + state.throttle * 1200;
+      const shiftDown = state.throttle > 0.55 ? 1500 : 1120;
+
+      if (!turnHold && rpm > shiftUp && state.autoGear < 8) {
+        state.autoGear += 1;
+      } else if ((rpm < shiftDown || (state.throttle > 0.78 && rpm < 3000)) && state.autoGear > 1) {
+        state.autoGear -= 1;
+      }
+    }
+
+    function updatePhysics(dt) {
+      updateInputs(dt);
+      updateTransmission();
+
+      const speedAbs = Math.abs(state.speedMps);
+      let driven = false;
+      let ratio = 0;
+      let direction = 1;
+
+      if (state.gearMode === "D") {
+        driven = true;
+        ratio = SPEC.gearRatios[state.autoGear - 1];
+      } else if (state.gearMode === "R") {
+        driven = true;
+        ratio = SPEC.reverseRatio;
+        direction = -1;
+      }
+
+      const wheelRps = speedAbs / (2 * Math.PI * SPEC.wheelRadiusM);
+      const converterSlip = state.throttle > 0.04 && speedAbs < 12 ? 1.28 - speedAbs * 0.018 : 1.02;
+      const rawRpm = driven ? wheelRps * ratio * SPEC.finalDrive * 60 * converterSlip : SPEC.idleRpm + state.throttle * 800;
+      state.rpm = lerp(state.rpm, clamp(rawRpm, SPEC.idleRpm, SPEC.redlineRpm), 1 - Math.pow(0.0002, dt));
+
+      const canMove = driven && !anyDoorOpen();
+      const beltLimiter = !state.beltLatched ? 0.24 : 1;
+      const torqueAvailable = engineTorqueAtRpm(state.rpm);
+      state.torqueNm = canMove ? torqueAvailable * state.throttle * beltLimiter : 0;
+
+      const drivelineEfficiency = 0.875;
+      const rawForce = state.torqueNm * ratio * SPEC.finalDrive * drivelineEfficiency / SPEC.wheelRadiusM;
+      const tractionLimit = SPEC.massKg * 9.81 * 0.61;
+      const engineForce = clamp(rawForce, 0, tractionLimit) * direction;
+
+      const airDensity = 1.225;
+      const dragForce = 0.5 * airDensity * SPEC.dragCd * SPEC.frontalAreaM2 * state.speedMps * speedAbs;
+      const rollingForce = SPEC.rollingResistance * SPEC.massKg * 9.81 * Math.sign(state.speedMps || direction);
+      const brakeForce = state.brake * SPEC.brakeMaxMps2 * SPEC.massKg * Math.sign(state.speedMps || direction);
+
+      let totalForce = engineForce - dragForce - rollingForce - brakeForce;
+
+      if (state.gearMode === "P") {
+        totalForce += -state.speedMps * SPEC.massKg * 10;
+      }
+
+      let accel = totalForce / SPEC.massKg;
+      if (Math.abs(state.speedMps) >= SPEC.topSpeedMps && accel * Math.sign(state.speedMps) > 0) {
+        accel = 0;
+        state.speedMps = Math.sign(state.speedMps) * SPEC.topSpeedMps;
+      }
+
+      state.speedMps += accel * dt;
+
+      if (Math.abs(state.speedMps) < 0.04 && state.throttle < 0.02) state.speedMps = 0;
+      if (state.gearMode !== "R" && state.speedMps < 0) state.speedMps = 0;
+      if (state.gearMode !== "D" && state.speedMps > 0 && !driven) {
+        state.speedMps = Math.max(0, state.speedMps - dt * 0.75);
+      }
+
+      const steerEffect = state.steer * Math.max(0.3, Math.min(1.9, speedAbs / 13));
+      state.laneOffset += steerEffect * dt * 0.92;
+      state.laneOffset = clamp(state.laneOffset, -2.35, 2.35);
+
+      state.distanceM += state.speedMps * dt;
+      state.routeProgress = (state.routeProgress + Math.abs(state.speedMps) * dt * 0.004) % 1;
+      state.wheelRotation = (state.wheelRotation + state.speedMps * dt / SPEC.wheelRadiusM * 57.2958) % 360;
+
+      const bumpBase = Math.sin(state.distanceM * 0.43) * 0.035 + Math.sin(state.distanceM * 1.7) * 0.018;
+      const speedBump = Math.max(0, Math.sin((state.distanceM - 80) * 0.09)) ** 18 * 0.34;
+      state.roadInputG = bumpBase + speedBump;
+      const magicFactor = state.magicRide ? 0.15 : 0.56;
+      const scanReduction = state.cameraScan && state.magicRide ? 0.68 : 1;
+      state.cabinHeaveG = lerp(state.cabinHeaveG, state.roadInputG * magicFactor * scanReduction, 1 - Math.pow(0.002, dt));
+      state.turnAhead = Math.sin((state.distanceM + 120) / 180) + 0.35 * Math.sin((state.distanceM + 80) / 63);
+
+      if (state.toastTimer > 0) {
+        state.toastTimer -= dt;
+        if (state.toastTimer <= 0) el.toast.classList.remove("show");
+      }
+    }
+
+    function drawCity() {
+      const w = innerWidth;
+      const h = innerHeight;
+      const horizon = h * 0.43;
+      const night = state.nightVision;
+
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      if (night) {
+        sky.addColorStop(0, "#031424");
+        sky.addColorStop(0.48, "#0b1c24");
+        sky.addColorStop(1, "#071013");
+      } else {
+        sky.addColorStop(0, "#8fb6cc");
+        sky.addColorStop(0.52, "#c5ccd0");
+        sky.addColorStop(1, "#182129");
+      }
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      drawSkyline(w, h, horizon);
+      drawRoad(w, h, horizon);
+      drawTraffic(w, h, horizon);
+      drawCabinReflection(w, h);
+      if (state.nightVision) drawNightVision(w, h);
+      if (state.hazards) drawHazards(w, h);
+    }
+
+    function drawSkyline(w, h, horizon) {
+      ctx.save();
+      ctx.translate(w / 2 - state.laneOffset * 30, 0);
+      for (const building of state.buildings) {
+        let z = ((building.z - state.distanceM * 0.45) % 2600 + 2600) % 2600;
+        const scale = 1 - z / 2800;
+        const x = building.side * (w * 0.23 + z * 0.28) + Math.sin(z * 0.01) * 28;
+        const bw = building.width * scale * 1.9;
+        const bh = building.height * scale;
+        const y = horizon - bh + 24 * scale;
+        const hue = building.hue;
+        ctx.fillStyle = `hsl(${hue}, ${building.lit ? 20 : 12}%, ${building.lit ? 24 : 15}%)`;
+        ctx.fillRect(x - bw / 2, y, bw, bh);
+        ctx.fillStyle = building.lit ? "rgba(240, 213, 142, 0.45)" : "rgba(255,255,255,0.08)";
+        const stepX = Math.max(8, bw / 5);
+        const stepY = 15 * scale;
+        for (let wx = x - bw / 2 + 6; wx < x + bw / 2 - 5; wx += stepX) {
+          for (let wy = y + 10; wy < horizon - 6; wy += stepY) {
+            if ((Math.floor(wx + wy + building.z) % 3) !== 0) {
+              ctx.fillRect(wx, wy, Math.max(2, stepX * 0.28), Math.max(2, stepY * 0.32));
+            }
+          }
+        }
+      }
+      ctx.restore();
+
+      ctx.fillStyle = "rgba(240, 213, 142, 0.45)";
+      ctx.beginPath();
+      ctx.arc(w * 0.78, h * 0.13, 24, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function roadXAt(w, depth, laneOffset) {
+      const curve = Math.sin((state.distanceM + depth * 2.4) / 180) * 80 + Math.sin((state.distanceM + depth * 2.4) / 63) * 22;
+      return w / 2 + curve - laneOffset * 42 * (1 - depth);
+    }
+
+    function drawRoad(w, h, horizon) {
+      const bottomWidth = w * 1.22;
+      const topWidth = w * 0.12;
+      const cxBottom = roadXAt(w, 1, state.laneOffset);
+      const cxTop = roadXAt(w, 0, state.laneOffset);
+
+      ctx.fillStyle = "#151a1f";
+      ctx.beginPath();
+      ctx.moveTo(cxTop - topWidth / 2, horizon);
+      ctx.lineTo(cxTop + topWidth / 2, horizon);
+      ctx.lineTo(cxBottom + bottomWidth / 2, h + 30);
+      ctx.lineTo(cxBottom - bottomWidth / 2, h + 30);
+      ctx.closePath();
+      ctx.fill();
+
+      const shoulder = ctx.createLinearGradient(0, horizon, 0, h);
+      shoulder.addColorStop(0, "rgba(217,183,106,0.15)");
+      shoulder.addColorStop(1, "rgba(217,183,106,0.02)");
+      ctx.strokeStyle = shoulder;
+      ctx.lineWidth = 5;
+      drawPerspectiveLine(w, h, horizon, -1.72, true);
+      drawPerspectiveLine(w, h, horizon, 1.72, true);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.38)";
+      ctx.lineWidth = 3;
+      for (const lane of [-0.58, 0.58]) {
+        drawDashedLane(w, h, horizon, lane);
+      }
+
+      ctx.fillStyle = "rgba(0,0,0,0.23)";
+      ctx.fillRect(0, h - 88, w, 88);
+    }
+
+    function drawPerspectiveLine(w, h, horizon, lane, solid) {
+      ctx.beginPath();
+      for (let i = 0; i <= 36; i += 1) {
+        const p = i / 36;
+        const y = lerp(h + 40, horizon, p);
+        const roadHalf = lerp(w * 0.61, w * 0.06, p);
+        const x = roadXAt(w, p, state.laneOffset) + lane * roadHalf / 1.72;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      if (solid) ctx.stroke();
+    }
+
+    function drawDashedLane(w, h, horizon, lane) {
+      for (let dash = 0; dash < 26; dash += 1) {
+        const offset = ((state.distanceM * 0.6 + dash * 28) % 720) / 720;
+        const p1 = offset;
+        const p2 = Math.min(1, offset + 0.035);
+        ctx.beginPath();
+        for (let i = 0; i <= 4; i += 1) {
+          const p = lerp(p1, p2, i / 4);
+          const y = lerp(innerHeight + 40, horizon, p);
+          const roadHalf = lerp(innerWidth * 0.61, innerWidth * 0.06, p);
+          const x = roadXAt(innerWidth, p, state.laneOffset) + lane * roadHalf / 1.72;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function drawTraffic(w, h, horizon) {
+      for (const car of state.traffic) {
+        car.z -= (state.speedMps - car.speed) * 0.4;
+        if (car.z < 20) car.z += 1400;
+        if (car.z > 1450) car.z -= 1300;
+        const depth = clamp(car.z / 1400, 0, 1);
+        const perspective = 1 - depth;
+        const y = lerp(h + 20, horizon + 6, depth);
+        const roadHalf = lerp(w * 0.58, w * 0.065, depth);
+        const x = roadXAt(w, depth, state.laneOffset) + car.lane * roadHalf * 0.34;
+        const cw = 70 * perspective + 8;
+        const ch = 36 * perspective + 5;
+        if (perspective <= 0.05) continue;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = `hsl(${car.hue}, 42%, ${state.nightVision ? 38 : 46}%)`;
+        roundRect(ctx, -cw / 2, -ch, cw, ch, Math.max(2, 8 * perspective));
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.62)";
+        ctx.fillRect(-cw * 0.28, -ch + 5 * perspective, cw * 0.56, ch * 0.22);
+        ctx.fillStyle = "rgba(255,60,60,0.75)";
+        ctx.fillRect(-cw * 0.43, -ch * 0.45, cw * 0.12, ch * 0.12);
+        ctx.fillRect(cw * 0.31, -ch * 0.45, cw * 0.12, ch * 0.12);
+        ctx.restore();
+      }
+    }
+
+    function drawCabinReflection(w, h) {
+      const y = h * 0.68 + state.cabinHeaveG * 80;
+      const gradient = ctx.createRadialGradient(w / 2, y, 10, w / 2, y, w * 0.7);
+      gradient.addColorStop(0, "rgba(255,255,255,0.06)");
+      gradient.addColorStop(0.4, "rgba(23,69,111,0.08)");
+      gradient.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, h * 0.35, w, h * 0.65);
+    }
+
+    function drawNightVision(w, h) {
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.fillStyle = "rgba(104, 211, 145, 0.07)";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(104, 211, 145, 0.32)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(w * 0.32, h * 0.24, w * 0.36, h * 0.48);
+      ctx.fillStyle = "rgba(104, 211, 145, 0.8)";
+      ctx.font = "12px ui-sans-serif, system-ui";
+      ctx.fillText("NIGHT VISION", w * 0.32 + 10, h * 0.24 + 22);
+      ctx.restore();
+    }
+
+    function drawHazards(w, h) {
+      if (Math.floor(state.time * 2.6) % 2 === 0) {
+        ctx.fillStyle = "rgba(255, 202, 104, 0.18)";
+        ctx.fillRect(0, h * 0.42, w, h * 0.36);
+      }
+    }
+
+    function roundRect(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.arcTo(x + width, y, x + width, y + height, r);
+      context.arcTo(x + width, y + height, x, y + height, r);
+      context.arcTo(x, y + height, x, y, r);
+      context.arcTo(x, y, x + width, y, r);
+      context.closePath();
+    }
+
+    function updateUi() {
+      const speed = Math.round(Math.abs(mph(state.speedMps)));
+      el.speedReadout.textContent = String(speed);
+      el.gearReadout.textContent = state.gearMode === "D" ? String(state.autoGear) : state.gearMode;
+      el.rpmText.textContent = String(Math.round(state.rpm));
+      el.rpmBar.style.width = `${clamp(state.rpm / SPEC.redlineRpm * 100, 0, 100)}%`;
+      el.torqueText.textContent = `${Math.round(state.torqueNm)} Nm`;
+      el.torqueBar.style.width = `${clamp(Math.abs(state.torqueNm) / SPEC.peakTorqueNm * 100, 0, 100)}%`;
+      el.throttleText.textContent = `${Math.round(state.throttle * 100)}%`;
+      el.throttleBar.style.width = `${Math.round(state.throttle * 100)}%`;
+      el.brakeText.textContent = `${Math.round(state.brake * 100)}%`;
+      el.brakeBar.style.width = `${Math.round(state.brake * 100)}%`;
+      el.throttlePedal.style.setProperty("--level", `${Math.round(state.throttle * 100)}%`);
+      el.brakePedal.style.setProperty("--level", `${Math.round(state.brake * 100)}%`);
+
+      const warnings = [];
+      if (anyDoorOpen()) warnings.push("doors open");
+      if (!state.beltLatched) warnings.push("belt open");
+      if (state.gearMode === "P") warnings.push("park selected");
+      if (state.gearMode === "N") warnings.push("neutral selected");
+      if (!warnings.length) warnings.push(state.chauffeur ? `chauffeur driving to ${state.destination}` : "ready");
+      el.warning.textContent = warnings.join(" | ");
+
+      el.beltRead.textContent = state.beltLatched ? "Latched" : "Open";
+      el.doorState.textContent = anyDoorOpen() ? "Open" : "Closed";
+      el.wheelState.textContent = Math.abs(state.speedMps) > 0.5 ? "Self-level" : "Level";
+      el.lightState.textContent = state.lights ? "Active" : "Off";
+      el.frontSeatRead.textContent = `${state.frontRecline} deg`;
+      el.climateRead.textContent = `${state.climate} C`;
+      el.soundRead.textContent = state.audioStudio ? "Studio" : "Quiet";
+      el.rideRead.textContent = state.magicRide ? "Soft" : "Direct";
+      el.cabinRead.textContent = `${state.cabinHeaveG.toFixed(2)} g`;
+      el.roadRead.textContent = `${state.roadInputG.toFixed(2)} g`;
+      el.shiftRead.textContent = state.cameraScan ? "SAT" : "Auto";
+      el.satStatus.textContent = state.cameraScan ? "Satellite-aided shift logic holding gears for corners" : "Conventional automatic shift map";
+      el.navRead.textContent = state.destination;
+      el.driverRead.textContent = state.chauffeur ? "Chauffeur" : "Owner";
+      el.safetyRead.textContent = anyDoorOpen() ? "Doors" : state.beltLatched ? "Guarding" : "Belt";
+      el.nightRead.textContent = state.nightVision ? "On" : "Off";
+      el.laneRead.textContent = state.laneAssist ? "Active" : "Off";
+      el.cruiseRead.textContent = state.adaptiveCruise ? "On" : "Off";
+
+      const mapX = 28 + state.routeProgress * 48;
+      const mapY = 58 - Math.sin(state.routeProgress * Math.PI) * 22;
+      el.mapDot.style.setProperty("--map-x", `${mapX}%`);
+      el.mapDot.style.setProperty("--map-y", `${mapY}%`);
+
+      document.documentElement.style.setProperty("--wheel-rot", `${state.wheelRotation}deg`);
+      document.documentElement.style.setProperty("--steer", `${state.steer * 92}`);
+      document.documentElement.style.setProperty("--driver-recline", `${state.frontRecline * 0.72}deg`);
+      document.documentElement.style.setProperty("--rear-recline", `${state.rearRecline * 0.65}deg`);
+      document.documentElement.style.setProperty("--stars-opacity", state.stars ? "0.86" : "0.12");
+      document.documentElement.style.setProperty("--table-angle", state.tables ? "0deg" : "83deg");
+      document.documentElement.style.setProperty("--screens-opacity", state.screens ? "1" : "0.22");
+      document.documentElement.style.setProperty("--divider-top", state.privacy ? "8%" : "110%");
+      document.documentElement.style.setProperty("--umbrella-out", state.umbrellaOut ? "-86px" : "0px");
+      document.documentElement.style.setProperty("--umbrella-opacity", state.umbrellaOut ? "1" : "0");
+      document.documentElement.style.setProperty("--seat-recline", `${state.frontRecline * 0.55}px`);
+      document.documentElement.style.setProperty("--wave-y", `${state.roadInputG * 78}px`);
+
+      el.cabinWave.style.transform = `translateY(${state.cabinHeaveG * 160}px)`;
+      el.roadWave.style.transform = `translateY(${state.roadInputG * 105}px)`;
+      el.glassTest.style.setProperty("--glass-tilt", `${state.cabinHeaveG * 26}deg`);
+      el.shaft.style.setProperty("--shaft-angle", `${Math.sin(state.time * Math.max(2, Math.abs(state.speedMps))) * 1.5}deg`);
+      el.spiritArt.classList.toggle("hidden", !state.spiritUp);
+
+      const dials = [
+        [el.powerDial, -70 + state.throttle * 140],
+        [el.rpmDial, -70 + clamp(state.rpm / SPEC.redlineRpm, 0, 1) * 140],
+        [el.comfortDial, -70 + (1 - clamp(Math.abs(state.cabinHeaveG) / 0.15, 0, 1)) * 140]
+      ];
+      for (const [node, angle] of dials) {
+        node.style.setProperty("--needle", `${angle}deg`);
+      }
+
+      [...el.gearStack.children].forEach((node, index) => {
+        node.classList.toggle("active", state.gearMode === "D" && index + 1 === state.autoGear);
+      });
+
+      document.getElementById("magicBtn").classList.toggle("active", state.magicRide);
+      document.getElementById("chauffeurBtn").classList.toggle("active", state.chauffeur);
+      document.getElementById("nightBtn").classList.toggle("active", state.nightVision);
+      document.getElementById("beltBtn").classList.toggle("active", state.beltLatched);
+      document.getElementById("doorAllBtn").classList.toggle("active", anyDoorOpen());
+      document.getElementById("laneBtn").classList.toggle("active", state.laneAssist);
+      document.getElementById("cruiseBtn").classList.toggle("active", state.adaptiveCruise);
+      document.getElementById("cameraBtn").classList.toggle("active", state.cameraScan);
+      document.getElementById("hazardBtn").classList.toggle("active", state.hazards);
+      document.getElementById("heatBtn").classList.toggle("active", state.heat);
+      document.getElementById("coolBtn").classList.toggle("active", state.cool);
+      document.getElementById("massageBtn").classList.toggle("active", state.massage);
+      document.getElementById("audioBtn").classList.toggle("active", state.audioStudio);
+      document.getElementById("starsBtn").classList.toggle("active", state.stars);
+      document.getElementById("rearMassageBtn").classList.toggle("active", state.rearMassage);
+      document.getElementById("tableBtn").classList.toggle("active", state.tables);
+      document.getElementById("screenBtn").classList.toggle("active", state.screens);
+      document.getElementById("privacyBtn").classList.toggle("active", state.privacy);
+      document.getElementById("coolerBtn").classList.toggle("active", state.cooler);
+    }
+
+    function gameLoop(now) {
+      const dt = clamp((now - state.lastTime) / 1000, 0, 0.05);
+      state.lastTime = now;
+      state.time += dt;
+      updatePhysics(dt);
+      drawCity();
+      updateUi();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function resetCar() {
+      state.speedMps = 0;
+      state.distanceM = 0;
+      state.laneOffset = 0;
+      state.steer = 0;
+      state.throttle = 0;
+      state.brake = 0;
+      state.rpm = SPEC.idleRpm;
+      state.autoGear = 1;
+      state.gearMode = "P";
+      state.chauffeur = false;
+      state.destination = "Cruise loop";
+      closeAllDoors(true);
+      updateGearButtons();
+      showToast("Phantom reset at the curb.");
+    }
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => setView(button.dataset.view));
+    });
+
+    document.querySelectorAll("[data-gear]").forEach((button) => {
+      button.addEventListener("click", () => setGear(button.dataset.gear));
+    });
+
+    document.querySelectorAll("[data-door]").forEach((button) => {
+      button.addEventListener("click", () => toggleDoor(button.dataset.door));
+    });
+
+    document.querySelectorAll("[data-destination]").forEach((button) => {
+      button.addEventListener("click", () => selectDestination(button.dataset.destination));
+    });
+
+    const bindToggle = (id, key, labelOn, labelOff) => {
+      document.getElementById(id).addEventListener("click", () => {
+        state[key] = !state[key];
+        if (labelOn) showToast(state[key] ? labelOn : labelOff);
+      });
+    };
+
+    document.getElementById("beltBtn").addEventListener("click", () => latchBelt());
+    document.getElementById("doorAllBtn").addEventListener("click", () => toggleDoor("all"));
+    document.getElementById("magicBtn").addEventListener("click", () => {
+      state.magicRide = !state.magicRide;
+      showToast(state.magicRide ? "Magic Carpet Ride active: camera scan and air springs smoothing the city." : "Direct ride selected: more road feel reaches the cabin.");
+    });
+    document.getElementById("chauffeurBtn").addEventListener("click", () => toggleChauffeur());
+    document.getElementById("nightBtn").addEventListener("click", () => {
+      state.nightVision = !state.nightVision;
+      showToast(state.nightVision ? "Night vision overlay active." : "Night vision off.");
+    });
+    document.getElementById("resetBtn").addEventListener("click", resetCar);
+    document.getElementById("summonBtn").addEventListener("click", () => toggleChauffeur(true));
+    document.getElementById("voiceBtn").addEventListener("click", processVoice);
+    el.voiceInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") processVoice();
+    });
+
+    bindToggle("laneBtn", "laneAssist", "Lane centering active.", "Lane centering off.");
+    bindToggle("cruiseBtn", "adaptiveCruise", "Adaptive cruise set for city pace.", "Adaptive cruise off.");
+    bindToggle("cameraBtn", "cameraScan", "Flagbearer camera scan feeding suspension and shift logic.", "Camera scan off.");
+    bindToggle("hazardBtn", "hazards", "Hazard lamps flashing.", "Hazard lamps off.");
+    bindToggle("heatBtn", "heat", "Seat heating warming the blue leather.", "Seat heating off.");
+    bindToggle("coolBtn", "cool", "Seat ventilation flowing through the cushion.", "Seat ventilation off.");
+    bindToggle("massageBtn", "massage", "Front seat massage pulsing.", "Front seat massage off.");
+    bindToggle("audioBtn", "audioStudio", "Bespoke audio studio mode active.", "Bespoke audio returned to quiet mode.");
+    bindToggle("starsBtn", "stars", "Starlight headliner brightened.", "Starlight headliner dimmed.");
+    bindToggle("rearMassageBtn", "rearMassage", "Rear massage running.", "Rear massage off.");
+    bindToggle("tableBtn", "tables", "Picnic tables deployed.", "Picnic tables folded.");
+    bindToggle("screenBtn", "screens", "Rear theatre screens raised.", "Rear theatre screens stowed.");
+    bindToggle("privacyBtn", "privacy", "Privacy divider raised.", "Privacy divider lowered.");
+    bindToggle("coolerBtn", "cooler", "Champagne cooler chilling.", "Champagne cooler off.");
+    bindToggle("lightsBtn", "lights", "Adaptive matrix lights active.", "Exterior lights off.");
+    bindToggle("spiritBtn", "spiritUp", "Spirit of Ecstasy raised.", "Spirit of Ecstasy retracted.");
+    bindToggle("umbrellaBtn", "umbrellaOut", "Door umbrella extended.", "Door umbrella stowed.");
+
+    const adjustSeat = (delta) => {
+      state.frontRecline = clamp(state.frontRecline + delta, -8, 24);
+      showToast(`Front seat recline set to ${state.frontRecline} degrees.`);
+    };
+    document.getElementById("frontForward").addEventListener("click", () => adjustSeat(-2));
+    document.getElementById("frontBack").addEventListener("click", () => adjustSeat(2));
+    document.getElementById("memoryBtn").addEventListener("click", () => {
+      state.frontRecline = 4;
+      state.climate = 22;
+      state.heat = false;
+      state.cool = true;
+      showToast("Memory 1 restored: upright seat, 22 C, ventilated comfort.");
+    });
+    document.getElementById("rearReclineBtn").addEventListener("click", () => {
+      state.rearRecline = state.rearRecline >= 22 ? 0 : state.rearRecline + 11;
+      showToast(`Rear lounge recline set to ${state.rearRecline} degrees.`);
+    });
+    document.getElementById("galleryBtn").addEventListener("click", () => {
+      state.galleryLit = !state.galleryLit;
+      el.cockpitStatus.textContent = state.galleryLit ? "Gallery fascia illuminated behind glass" : "Gallery fascia dimmed";
+      showToast(state.galleryLit ? "Glass Gallery fascia illuminated." : "Glass Gallery fascia dimmed.");
+    });
+
+    document.getElementById("seatHeatQuick").addEventListener("click", () => document.getElementById("heatBtn").click());
+    document.getElementById("seatCoolQuick").addEventListener("click", () => document.getElementById("coolBtn").click());
+    document.getElementById("seatMassageQuick").addEventListener("click", () => document.getElementById("massageBtn").click());
+    document.getElementById("seatPlusQuick").addEventListener("click", () => adjustSeat(2));
+    document.getElementById("seatMinusQuick").addEventListener("click", () => adjustSeat(-2));
+    document.getElementById("seatResetQuick").addEventListener("click", () => {
+      state.frontRecline = 0;
+      showToast("Front seat reset upright.");
+    });
+
+    document.getElementById("hornBtn").addEventListener("pointerdown", () => {
+      state.horn = true;
+      showToast("Twin-tone horn sounded.");
+    });
+    document.getElementById("hornBtn").addEventListener("pointerup", () => {
+      state.horn = false;
+    });
+
+    window.addEventListener("keydown", (event) => {
+      state.keys[event.code] = true;
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
+        event.preventDefault();
+      }
+      if (event.code === "KeyP") setGear("P");
+      if (event.code === "KeyR") setGear("R");
+      if (event.code === "KeyN") setGear("N");
+      if (event.code === "KeyD" && !event.repeat && !event.metaKey && !event.ctrlKey) {
+        if (!state.keys.KeyA && !state.keys.ArrowLeft && !state.keys.ArrowRight) setGear("D");
+      }
+    });
+
+    window.addEventListener("keyup", (event) => {
+      state.keys[event.code] = false;
+    });
+
+    document.querySelectorAll("[data-pad]").forEach((button) => {
+      const map = {
+        up: "ArrowUp",
+        down: "ArrowDown",
+        left: "ArrowLeft",
+        right: "ArrowRight"
+      };
+      const code = map[button.dataset.pad];
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        state.keys[code] = true;
+        button.setPointerCapture(event.pointerId);
+      });
+      button.addEventListener("pointerup", () => {
+        state.keys[code] = false;
+      });
+      button.addEventListener("pointercancel", () => {
+        state.keys[code] = false;
+      });
+    });
+
+    updateDoorArt();
+    updateGearButtons();
+    showToast("Welcome. Select Drive or hire a chauffeur to start the Phantom city loop.");
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
