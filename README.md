@@ -45,6 +45,7 @@ No package installation is required for the current scripts.
 - `src/ui/media-status.js` owns small media status label helpers.
 - `docs/ARCHITECTURE.md` explains the module layout.
 - `docs/GODOT_MIGRATION.md` explains how this Web prototype should stay useful for a future Godot 3D game.
+- `docs/GITHUB_WORKFLOW.md` explains how to use GitHub with this project.
 
 The legacy single-file build remains as `Rolls Royce Phantom v2B.html` for comparison while the modular version stabilizes.
 
