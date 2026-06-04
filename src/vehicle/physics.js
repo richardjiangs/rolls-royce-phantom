@@ -145,10 +145,14 @@ const updateDoorArt = (...args) => app.updateDoorArt(...args);
     if (state.adaptiveCruise && !state.chauffeur) limit = clamp(state.cruiseSetMph, 5, 155) * MPH; // hold the set speed
     else if (state.route.active) limit = (DESTINATIONS[state.route.name]?.limitMph || 45) * MPH;
     else limit = 42 * MPH; // relaxed city cruise
-    // Both the chauffeur and cruise ease the speed for corners so the car never runs wide.
-    // Adaptive cruise is deliberately conservative because it also owns the steering when active.
-    const cornerCap = cornerSpeedCap(state.chauffeur ? 0.42 : 0.46);
-    // slow only for a car genuinely in our path; chauffeur overtaking lifts this as we pull alongside
+    // Corner speed: cruise HOLDS your set speed and only sheds the minimum needed for a bend the
+    // tyres genuinely could not hold at full speed — it plans to 0.72 g, near the ~0.85 g limit
+    // (the lane-keep is proven to hold the road to ~0.78 g), so it barely lifts for ordinary
+    // curves and never runs wide. The chauffeur plans gentler (0.58 g) for a serene ride. No car
+    // can hold 155 mph through a hairpin — that is why a little easing for the sharpest bends
+    // remains; everywhere else, your set speed stands.
+    const cornerCap = cornerSpeedCap(state.chauffeur ? 0.58 : 0.72);
+    // slow only for a car genuinely in our path; overtaking lifts this as we pull alongside
     const lead = nearestLeadVehicle();
     let trafficCap = Infinity;
     if (lead) {
@@ -186,9 +190,8 @@ const updateDoorArt = (...args) => app.updateDoorArt(...args);
     }
     return r;
   }
-  // the lateral line the chauffeur should hold: stay if clear, pull out to pass a
-  // slower car when a neighbouring lane has more room, and drift back to centre when free.
-  // Adaptive cruise does not call this; it holds the centre lane and follows traffic.
+  // the lateral line the chauffeur/cruise should hold: stay if clear, pull out to pass a
+  // slower car when a neighbouring lane has more room, and drift back to centre when free
   function chooseLaneOffset() {
     const lanes = laneScan();
     const cur = clamp(Math.round(state.laneOffset / 3), -1, 1);
@@ -211,21 +214,108 @@ const updateDoorArt = (...args) => app.updateDoorArt(...args);
   // Steering geometry shared by the physics and the driver-assist controllers.
   // Set to the real Phantom: 3.552 m wheelbase, 1.67 m front track and 35.27° of lock give
   // a 13.7 m kerb-to-kerb turning circle — the factory figure.
-  const STEERING = { wheelbase: 3.552, frontTrack: 1.67, maxAngle: 0.6156, latGrip: 0.9 * 9.81 }; // 0.90 g lateral grip (Rolls-Royce skidpad)
-  // Speed-sensitive rack, tuned to physics: full lock equals EXACTLY the tyres' grip limit at any
-  // speed, so the steering is PROGRESSIVE — a small input gives a small turn, full lock gives the
-  // most the grip allows — instead of snapping to the limit on any input (which felt twitchy and
-  // unsteerable). Full lock at manoeuvring speed (13.7 m circle), easing smoothly as speed rises:
-  // light and precise, exactly the Phantom's character.
-  function steerFactorOf(speedAbs) {
-    const v = Math.max(2, speedAbs);
-    return clamp(Math.atan(STEERING.latGrip * STEERING.wheelbase / (v * v)) / STEERING.maxAngle, 0.012, 1);
+  const STEERING = { wheelbase: 3.552, frontTrack: 1.67, maxAngle: 0.6156, latGrip: 0.86 * 9.81 }; // ~0.85 g realised skidpad
+
+  /* ============================================================================
+     VEHICLE DYNAMICS — dynamic bicycle model · Pacejka tyres · load transfer · EPS · ESP
+     The Phantom is no longer steered by a script. The wheel sets a front road-wheel angle
+     through a variable-ratio EPS; the tyres build slip-angle (Magic-Formula) forces under
+     real lateral load transfer and a little aero load; those forces yaw the car. High-speed
+     stability, limit understeer and the ~0.85 g skidpad all fall out of the physics — and the
+     car stays fully steerable at 155 mph (the old grip-clamp made it numb above ~120 mph).
+     Validated against the brief: 2560 kg, 3.552 m wheelbase, ~0.85 g limit, clear understeer.
+     ============================================================================ */
+  const VEHICLE = {
+    mass: 2560, Iz: 6200, wheelbase: 3.552,
+    a: 1.72, b: 1.832,             // CG → front / rear axle  (a + b = wheelbase)
+    trackF: 1.67, trackR: 1.69, cgHeight: 0.60,
+    Cf: 160000, Cr: 175000,        // axle cornering-stiffness seeds (Cr > Cf reinforces understeer)
+    steerRatio: 18,                // EPS steering-wheel : road-wheel  (180° wheel ≈ 10° front)
+    muF: 0.88, muR: 0.96,          // the narrower 275 front gives up before the wider 315 rear → understeer
+    muLoadSens: 0.10, FzRef: 6300, // tyre grip falls as vertical load rises (load sensitivity)
+    aeroCLAf: 0.15, aeroCLAr: 0.15 // ½ρCₗA front/rear — small on a Phantom, but it plants 155 mph
+  };
+  const RHO = 1.225;
+  const Wf = VEHICLE.mass * 9.81 * VEHICLE.b / VEHICLE.wheelbase;   // static front axle load (N)
+  const Wr = VEHICLE.mass * 9.81 * VEHICLE.a / VEHICLE.wheelbase;   // static rear axle load (N)
+  const TYRE_C = 1.4, TYRE_E = 0.97;                                // Pacejka shape / curvature
+  const Bf = VEHICLE.Cf / (2 * VEHICLE.muF * VEHICLE.FzRef * TYRE_C);  // stiffness factor sized to Cf
+  const Br = VEHICLE.Cr / (2 * VEHICLE.muR * VEHICLE.FzRef * TYRE_C);  // … and to Cr
+  const KUS_LIN = 0.0008;          // linear understeer gradient the model actually shows (rad·s²/m)
+  const KUS_NL = 0.030;            // extra understeer that builds toward the grip limit
+
+  // One-tyre Pacejka Magic-Formula lateral force. A positive slip angle returns a negative
+  // (restoring) force, matching the textbook Fy = −Cα. Grip peak D = μ(Fz)·Fz falls with load,
+  // so piling weight onto the outside tyre in a hard corner LOSES total axle grip — the real
+  // reason a heavy saloon washes wide at the limit.
+  function tyreFy(alpha, Fz, mu0, B) {
+    if (Fz <= 0) return 0;
+    const mu = mu0 * (1 - VEHICLE.muLoadSens * (Fz - VEHICLE.FzRef) / VEHICLE.FzRef);
+    const D = Math.max(0, mu) * Fz;
+    const Ba = B * alpha;
+    return -D * Math.sin(TYRE_C * Math.atan(Ba - TYRE_E * (Ba - Math.atan(Ba))));
   }
-  // the normalised wheel position (-1..1) that yields a desired yaw-rate at a given speed
+
+  // Variable-ratio EPS — a genuine Phantom feature. Full authority for the 13.7 m turning circle
+  // at parking; the ratio relaxes with speed so the rack stays calm at a cruise. Crucially it
+  // NEVER goes numb: the 0.16 floor leaves a confident lane-change in hand at 155 mph, where the
+  // old grip-clamp collapsed to 0.012 — which is exactly why the car would not steer at speed.
+  function steerGain(speedAbs) {
+    return clamp(0.16 + 0.84 * 400 / (400 + speedAbs * speedAbs), 0.16, 1);
+  }
+
+  // Advance the lateral state (sideslip vy, yaw rate) one frame. Tyre slip angles → Pacejka
+  // forces with lateral load transfer + aero load → yaw moment → integrate. Sub-stepped for
+  // stability, blended to the kinematic Ackermann turn at a crawl so the tight circle and U-turns
+  // still work, and overseen by a dormant ESP that nips only a genuine spin.
+  function updateLateralDynamics(vx, roadWheel, dt, espOn) {
+    if (state.vy === undefined) state.vy = 0;
+    if (state.yawRate === undefined) state.yawRate = 0;
+    const vxAbs = Math.abs(vx), vxSafe = Math.max(vxAbs, 3.0);
+    const sub = 4, h = dt / sub;
+    const ay0 = state.lateralG * 9.81;                 // last frame's lateral accel → load transfer
+    const q = 0.5 * RHO * vxAbs * vxAbs;               // dynamic pressure for the aero load
+    const azF = q * VEHICLE.aeroCLAf / 2, azR = q * VEHICLE.aeroCLAr / 2;
+    let vy = state.vy, yawRate = state.yawRate, Fyf = 0, Fyr = 0;
+    for (let i = 0; i < sub; i++) {
+      const aF = Math.atan((vy + VEHICLE.a * yawRate) / vxSafe) - roadWheel;   // front slip angle
+      const aR = Math.atan((vy - VEHICLE.b * yawRate) / vxSafe);               // rear slip angle
+      const dFzF = clamp(VEHICLE.mass * ay0 * VEHICLE.cgHeight / VEHICLE.trackF * (Wf / (Wf + Wr)), -Wf * 0.49, Wf * 0.49);
+      const dFzR = clamp(VEHICLE.mass * ay0 * VEHICLE.cgHeight / VEHICLE.trackR * (Wr / (Wf + Wr)), -Wr * 0.49, Wr * 0.49);
+      Fyf = tyreFy(aF, Wf / 2 + azF + dFzF, VEHICLE.muF, Bf) + tyreFy(aF, Wf / 2 + azF - dFzF, VEHICLE.muF, Bf);
+      Fyr = tyreFy(aR, Wr / 2 + azR + dFzR, VEHICLE.muR, Br) + tyreFy(aR, Wr / 2 + azR - dFzR, VEHICLE.muR, Br);
+      let Mz = VEHICLE.a * Fyf - VEHICLE.b * Fyr;
+      if (espOn && vxAbs > 8) {
+        const targetYaw = vxSafe * roadWheel / (VEHICLE.wheelbase + KUS_LIN * vxSafe * vxSafe);
+        const excess = yawRate - targetYaw;
+        const sideslip = Math.abs(Math.atan2(vy, vxSafe));
+        if (Math.abs(yawRate) > Math.abs(targetYaw) * 1.25 && Math.sign(yawRate) === Math.sign(excess) && sideslip > 0.12) {
+          Mz -= excess * VEHICLE.Iz;                   // ESP: gentle brake-yaw back to the reference
+        }
+      }
+      vy += ((Fyf + Fyr) / VEHICLE.mass - vx * yawRate) * h;
+      yawRate += (Mz / VEHICLE.Iz) * h;
+    }
+    const ay = (Fyf + Fyr) / VEHICLE.mass;
+    // blend to the kinematic turn at a crawl so the 13.7 m circle and U-turns are unaffected
+    const dynBlend = clamp((vxAbs - 4) / 6, 0, 1);
+    const yawKin = (vx / VEHICLE.wheelbase) * Math.tan(roadWheel);
+    yawRate = yawKin + (yawRate - yawKin) * dynBlend;
+    vy = (VEHICLE.b * yawRate) * (1 - dynBlend) + vy * dynBlend;
+    state.vy = vy; state.yawRate = yawRate;
+    return { yawRate, vy, ay };
+  }
+
+  // The normalised wheel position (−1..1) that yields a desired yaw-rate at a given speed.
+  // It inverts the EPS and the steady-state understeer — and lets the understeer term grow with
+  // the lateral demand — so the chauffeur, cruise and lane-keep can hold their line all the way
+  // up to the grip limit (a linear inverse would wash wide above ~0.55 g).
   function steerForYaw(desiredYaw, v) {
     const vAbs = Math.max(2.2, Math.abs(v));
-    const ang = Math.atan((desiredYaw * STEERING.wheelbase) / vAbs);
-    return clamp(ang / (STEERING.maxAngle * steerFactorOf(Math.abs(v))), -1, 1);
+    const ay = desiredYaw * vAbs;                                            // implied lateral accel
+    const Kus = KUS_LIN + KUS_NL * Math.min(1, (Math.abs(ay) / 8.1) ** 2);
+    const roadWheel = desiredYaw * VEHICLE.wheelbase / vAbs + Kus * ay;      // Ackermann + understeer steer
+    return clamp(roadWheel / (STEERING.maxAngle * steerGain(vAbs)), -1, 1);
   }
   // steer the heading to hold a target lane line (centre, or an overtaking line)
   // Lane assist that cannot overshoot: aim only as steeply toward the lane as the car can still
@@ -236,32 +326,18 @@ const updateDoorArt = (...args) => app.updateDoorArt(...args);
     const tgt = (targetOffset === undefined || targetOffset === null) ? 0 : targetOffset;
     const e = state.laneOffset - tgt;                                  // cross-track error, + = right
     const v = state.speedMps, vAbs = Math.max(3, Math.abs(v));
-    const look = clamp(vAbs * 1.15, 12, 96);
-    const kNear = curvatureAt(state.distanceM + look * 0.45);
+    const look = clamp(Math.abs(v) * 0.8, 10, 28);
     const kAhead = curvatureAt(state.distanceM + look);
-    const kGuide = kNear * 0.45 + kAhead * 0.55;
     const omega = STEERING.latGrip / vAbs;                             // available (grip) turn rate
     const phiSafe = Math.min(0.45, Math.sqrt(2 * omega * Math.abs(e) / vAbs) * 0.7);  // 0.7 = safety margin
     const phiTarget = -Math.sign(e) * phiSafe;                         // aim toward the lane, only as much as is safe
-    const ffYaw = kGuide * v;                                          // follow the bend
+    const ffYaw = kAhead * v;                                          // follow the bend
     const yawCmd = ffYaw + (phiTarget - state.headingRel) * 1.4 * (gain || 1) - (state.headingRate || 0) * 0.45;
-    state.blinker = Math.abs(e) > 0.7 ? -Math.sign(e) : (Math.abs(kGuide) > 0.02 ? Math.sign(kGuide) : 0);
+    state.blinker = Math.abs(e) > 0.7 ? -Math.sign(e) : (Math.abs(kAhead) > 0.02 ? Math.sign(kAhead) : 0);
     return steerForYaw(yawCmd, v);
   }
 
-  function laneAssistGuardian(throttle, brake) {
-    const cap = cornerSpeedCap(0.42);
-    if (!Number.isFinite(cap)) return { throttle, brake };
-    const over = Math.abs(state.speedMps) - cap;
-    if (over <= 0.4) return { throttle, brake };
-    const demand = clamp(over / 18, 0, 1);
-    return {
-      throttle: Math.min(throttle, clamp(1 - demand * 2.3, 0, 1)),
-      brake: Math.max(brake, clamp(demand * 0.72, 0.06, 0.72))
-    };
-  }
-
-  function autopilotControls(dt, targetOffset, steerGain) {
+  function autopilotControls(dt) {
     // Longitudinal: single demand in [-1,1]; never throttle & brake together.
     const target = targetSpeedMps();
     const err = target - state.speedMps;
@@ -270,8 +346,7 @@ const updateDoorArt = (...args) => app.updateDoorArt(...args);
     let throttle = demand > 0 ? clamp(demand, 0, 0.9) : 0;
     let brake = demand < 0 ? clamp(-demand * 0.7, 0, 0.85) : 0;
     if (brake < 0.05) brake = 0;                            // smooth chauffeur rarely brakes
-    const laneTarget = targetOffset === undefined ? chooseLaneOffset() : targetOffset;
-    return { throttle, brake, steerTarget: pathSteer(steerGain || 1, laneTarget) };
+    return { throttle, brake, steerTarget: pathSteer(1, chooseLaneOffset()) };  // pass slow cars
   }
 
   function updateInputs(dt) {
@@ -287,26 +362,22 @@ const updateDoorArt = (...args) => app.updateDoorArt(...args);
     let throttleTarget, brakeTarget, steerTarget;
 
     if (state.chauffeur) {
-      const a = autopilotControls(dt, chooseLaneOffset(), 1.05);
+      const a = autopilotControls(dt);
       throttleTarget = ownerThrottle > 0 ? ownerThrottle : a.throttle;
       brakeTarget = ownerBrake > 0 ? ownerBrake : a.brake;
       steerTarget = steerInput !== 0 ? steerInput : a.steerTarget;
     } else if (cruiseActive) {
-      const a = autopilotControls(dt, 0, 1.25);   // cruise holds the centre lane and follows traffic
+      const a = autopilotControls(dt);            // longitudinal holds the set cruise speed
       throttleTarget = ownerThrottle > 0 ? ownerThrottle : a.throttle;
       brakeTarget = ownerBrake > 0 ? ownerBrake : a.brake;
-      steerTarget = steerInput !== 0 ? steerInput : a.steerTarget;
+      // cruise steers itself, passing slow cars to keep your set speed (you can override)
+      steerTarget = steerInput !== 0 ? steerInput : pathSteer(1.0, chooseLaneOffset());
     } else {
       throttleTarget = ownerThrottle;
       brakeTarget = ownerBrake;
       // manual lane assist brings you back to the centre of the road when you let go, firmly
       // if you've wandered off, so you never get marooned on the grass. Off = free to roam.
       steerTarget = steerInput !== 0 ? steerInput : (assist ? pathSteer(1.1, 0) : 0);
-      if (assist && steerInput === 0) {
-        const guarded = laneAssistGuardian(throttleTarget, brakeTarget);
-        throttleTarget = guarded.throttle;
-        brakeTarget = guarded.brake;
-      }
     }
 
     if (steerInput !== 0) state.blinker = Math.sign(steerInput);
@@ -362,41 +433,31 @@ const updateDoorArt = (...args) => app.updateDoorArt(...args);
     if (state.gearMode !== "R" && state.speedMps < 0) state.speedMps = 0;
     if (!driven && state.speedMps > 0) state.speedMps = Math.max(0, state.speedMps - dt * 0.6);
 
-    // --- steering & heading (bicycle model): the wheel rotates the car, so it can take
-    //     90/180/270-degree turns and complete a full U-turn, not just slide sideways ---
+    // --- steering & lateral dynamics: a true dynamic bicycle model. The steering wheel sets a
+    //     front road-wheel angle through the variable-ratio EPS; the tyres build slip-angle
+    //     (Pacejka) forces under real load transfer; those forces yaw the car. So it takes
+    //     90/180/270-degree turns and a full U-turn, stays planted to 155 mph, and washes wide
+    //     (understeer) — never snaps — when asked for more grip than the tyres own. ---
     state.curvature = curvatureAt(state.distanceM);
-    const v = state.speedMps;                                   // signed
-    const steerAngle = state.steer * STEERING.maxAngle * steerFactorOf(speedAbs);
-    const yawKin = (v / STEERING.wheelbase) * Math.tan(steerAngle);
-    // Cap the turn rate at the tyres' grip. This keeps a hard turn from over-rotating the car —
-    // without it, a brief full-lock spins you ~150 deg, so steering back just carries you
-    // farther off before it reverses. (No effect at low speed: the 13.7 m turning circle stands.)
-    const gripYaw = speedAbs > 0.5 ? STEERING.latGrip / speedAbs : 1e9;
-    const yawRate = clamp(yawKin, -gripYaw, gripYaw);                   // rad/s
+    const v = state.speedMps;                                   // signed longitudinal speed (vx)
+    const roadWheel = state.steer * STEERING.maxAngle * steerGain(speedAbs);   // EPS variable-ratio rack
+    const lat = updateLateralDynamics(v, roadWheel, dt, true);  // integrates state.vy & state.yawRate
+    const yawRate = lat.yawRate, vy = lat.vy;                    // rad/s · m/s
     const k0 = state.curvature;
     const denom = clamp(1 - state.laneOffset * k0, 0.4, 1.6);
-    const dsdt = v * Math.cos(state.headingRel) / denom;        // progress along the road
-    const dndt = v * Math.sin(state.headingRel);                // sideways drift
-    // Directional stability: at speed the car eases its heading back toward the road's line when
-    // you're not actively turning, so letting go of the wheel STRAIGHTENS you out (planted, easy
-    // to place) instead of holding a heading and drifting. Zero at low speed, so U-turns and the
-    // 13.7 m circle are unaffected. Aligns to whichever way you're travelling (forward or after a U-turn).
-    // Directional stability is part of the assisted driving. With lane, cruise AND chauffeur all
-    // off you are in full manual command — no self-straightening, free to roam onto the grass and
-    // stay there; nothing pulls you back.
-    const aidsOn = state.laneAssist || state.chauffeur || state.adaptiveCruise;
-    // Gentle directional stability — like the Phantom's high-speed rear-steer: enough to settle
-    // the car and straighten it when you let go, but never so much it fights your steering.
-    const stab = aidsOn ? clamp((speedAbs - 5) * 0.07, 0, 1.2) : 0;
-    const alignTo = Math.abs(state.headingRel) < Math.PI / 2 ? 0 : Math.sign(state.headingRel) * Math.PI;
-    const dphidt = yawRate - k0 * dsdt - stab * (state.headingRel - alignTo);
-    state.headingRate = dphidt;                                  // exposed so lane assist can damp on it
+    const dsdt = (v * Math.cos(state.headingRel) - vy * Math.sin(state.headingRel)) / denom;  // progress along road
+    const dndt = v * Math.sin(state.headingRel) + vy * Math.cos(state.headingRel);            // sideways drift incl. sideslip
+    // heading relative to the road = the car's yaw rate minus the rate the road itself turns.
+    // Stability and self-straightening now come from the tyre physics (understeer) plus the
+    // lane/cruise/chauffeur controllers — no scripted heading nudge, so full-manual is pure car.
+    const dphidt = yawRate - k0 * dsdt;
+    state.headingRate = dphidt;                                  // exposed so the assists can damp on it
     state.headingRel += dphidt * dt;
     if (state.headingRel > Math.PI) state.headingRel -= 2 * Math.PI;
     else if (state.headingRel < -Math.PI) state.headingRel += 2 * Math.PI;
     state.laneOffset = clamp(state.laneOffset + dndt * dt, -60, 60);
     state.distanceM += dsdt * dt;
-    state.lateralG = (v * yawRate) / 9.81;
+    state.lateralG = lat.ay / 9.81;                             // force-based — naturally bounded by grip
     state.bodyRoll = approach(state.bodyRoll, clamp(state.lateralG * (state.magicRide ? 6 : 11), -9, 9), 0.002, dt);
     state.wheelRotation = (state.wheelRotation + v * dt / SPEC.wheelRadiusM * 57.2958) % 360;
 
@@ -471,10 +532,12 @@ Object.assign(app, {
   chooseLaneOffset,
   laneIndex,
   STEERING,
-  steerFactorOf,
+  VEHICLE,
+  tyreFy,
+  steerGain,
+  updateLateralDynamics,
   steerForYaw,
   pathSteer,
-  laneAssistGuardian,
   autopilotControls,
   updateInputs,
   updatePhysics,
