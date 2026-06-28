@@ -1,0 +1,1945 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Pagani Huayra BC — Macchina del Tempo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #eef1f4;
+      --muted: #99a1ab;
+      --carbon: #0a0b0d;
+      --carbon2: #14161b;
+      --panel: rgba(15,17,21,0.80);
+      --panel-strong: rgba(8,9,12,0.93);
+      --line: rgba(180,194,208,0.14);
+      --alu: #c9cfd6;
+      --alu-d: #828a93;
+      --teal: #34c6bf;          /* Pagani sky-blue accent */
+      --teal-b: #82f1ea;
+      --amber: #f0a23c;         /* tachometer amber */
+      --amber-b: #ffd28a;
+      --cognac: #6f421f;        /* saddle leather */
+      --cognac2: #b3803f;
+      --green: #5fe08c;
+      --red: #ff6060;
+      --shadow: rgba(0,0,0,0.55);
+      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin:0; min-height:100%; background:#050608; color:var(--ink); overflow:hidden; }
+    body { letter-spacing:0.1px; user-select:none; -webkit-tap-highlight-color:transparent; }
+    button, input, select { font: inherit; }
+
+    /* ---- Machined-aluminium controls (deliberately NOT the Rolls-Royce gold look) ---- */
+    button {
+      border: 1px solid rgba(201,207,214,0.22);
+      background: linear-gradient(180deg, rgba(225,231,238,0.10), rgba(120,128,138,0.05));
+      color: var(--ink);
+      min-height: 34px; border-radius: 4px; padding: 7px 10px; cursor: pointer;
+      letter-spacing: 0.4px; font-size: 12.5px;
+      transition: transform 90ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+    }
+    button:hover { background: linear-gradient(180deg, rgba(231,236,242,0.16), rgba(120,128,138,0.06)); border-color: rgba(130,241,234,0.5); }
+    button:active { transform: translateY(1px); }
+    button.active {
+      background: linear-gradient(180deg, rgba(52,198,191,0.30), rgba(20,90,86,0.18));
+      border-color: rgba(130,241,234,0.8); color: #ecffff;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 0 16px rgba(52,198,191,0.30);
+    }
+    button.danger.active { background: rgba(255,96,96,0.24); border-color: rgba(255,96,96,0.75); color:#ffe1e1; box-shadow:0 0 16px rgba(255,96,96,0.3); }
+    button.race.active { background: linear-gradient(180deg, rgba(240,162,60,0.30), rgba(120,70,18,0.2)); border-color: rgba(255,210,138,0.8); color:#fff1da; box-shadow:0 0 16px rgba(240,162,60,0.32); }
+
+    /* aircraft-style toggle pill */
+    .toggle { position:relative; min-width:52px; padding-left:30px; text-align:left; }
+    .toggle::before { content:""; position:absolute; left:7px; top:50%; transform:translateY(-50%); width:16px; height:16px; border-radius:50%;
+      background: radial-gradient(circle at 35% 30%, #f2f5f8, #6a7079); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.6); transition: left 140ms ease, background 140ms ease; }
+    .toggle.active::before { left:calc(100% - 23px); background: radial-gradient(circle at 35% 30%, #c9fffb, var(--teal)); }
+
+    #worldCanvas { position:fixed; inset:0; width:100vw; height:100vh; display:block; background:#0b1016; }
+
+    .app { position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto; pointer-events:none; }
+    .topbar, .bottombar, .mode-panel, .hud, .drive-help { pointer-events:auto; }
+
+    .topbar { display:grid; grid-template-columns: minmax(196px,0.86fr) minmax(330px,1.65fr) minmax(286px,1.15fr); gap:10px; align-items:start; padding:12px; }
+
+    .brand { min-height:72px; padding:12px 14px; border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(20,22,27,0.85), rgba(8,9,12,0.85)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.018) 0 6px, rgba(0,0,0,0) 6px 12px);
+      backdrop-filter: blur(16px); border-radius:7px; box-shadow:0 18px 46px var(--shadow); }
+    .brand .mark { width:38px; height:46px; float:left; margin-right:12px; border:1px solid rgba(130,241,234,0.5); border-radius:3px;
+      display:grid; place-items:center; color:var(--teal-b); font-family:"Trajan Pro", Georgia, serif; font-size:15px; font-weight:700; letter-spacing:1px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.10), rgba(0,0,0,0.32)); }
+    h1 { margin:0; font-size:clamp(15px,1.8vw,21px); font-weight:700; line-height:1.05; letter-spacing:0.5px; }
+    .brand p { margin:5px 0 0; color:var(--muted); font-size:11px; line-height:1.4; }
+
+    .tabs, .quick { display:flex; flex-wrap:wrap; gap:7px; padding:9px; background:var(--panel); border:1px solid var(--line); border-radius:7px;
+      backdrop-filter:blur(16px); box-shadow:0 18px 46px var(--shadow); }
+    .tabs button { flex:1 1 84px; white-space:nowrap; }
+    .quick { justify-content:flex-end; }
+    .quick button { min-width:46px; }
+
+    .center-stage { position:relative; min-height:0; pointer-events:none; }
+
+    .hud { position:absolute; left:12px; top:6px; width:min(340px, calc(100vw - 24px));
+      border:1px solid var(--line); background: rgba(6,8,11,0.66); border-radius:7px; padding:12px; backdrop-filter:blur(15px);
+      box-shadow:0 20px 55px rgba(0,0,0,0.45); }
+    .speed-row { display:grid; grid-template-columns:1fr auto; align-items:end; gap:10px; }
+    .speed { font-size:clamp(44px,6.4vw,68px); line-height:0.84; font-variant-numeric:tabular-nums; font-weight:800; }
+    .unit { color:var(--muted); font-size:12px; margin-bottom:7px; letter-spacing:2px; }
+    .gear-tile { width:62px; height:62px; display:grid; place-items:center; border-radius:6px;
+      border:1px solid rgba(240,162,60,0.6); background: radial-gradient(circle at 45% 28%, rgba(240,162,60,0.26), rgba(0,0,0,0.3));
+      color:#ffe7c2; font-size:32px; font-weight:800; font-variant-numeric:tabular-nums; }
+    .gear-tile.limit { animation: shiftFlash 0.18s steps(2) infinite; }
+    @keyframes shiftFlash { 0%{box-shadow:0 0 22px rgba(255,80,80,0.9); border-color:#ff6060;} 100%{box-shadow:none;} }
+    .meter-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
+    .meter { min-width:0; }
+    .meter label { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; margin-bottom:4px; }
+    .bar { height:8px; border-radius:2px; background:rgba(255,255,255,0.07); overflow:hidden; border:1px solid rgba(255,255,255,0.07); }
+    .bar > i { display:block; height:100%; width:0%; background:linear-gradient(90deg, var(--teal), var(--teal-b)); transition:width 80ms linear; }
+    .bar.rpm > i { background:linear-gradient(90deg, #2e8f8a 0%, var(--amber) 78%, #ff5b5b 100%); }
+    .bar.boost > i { background:linear-gradient(90deg, #5a6b9c, #9fd0ff); }
+    .bar.brake > i { background:linear-gradient(90deg, #b34a4a, #ff8a8a); }
+    .warning { margin-top:8px; min-height:18px; font-size:12px; color:var(--amber-b); }
+
+    .aero-row { display:flex; gap:8px; margin-top:8px; align-items:center; justify-content:space-between; }
+    .aero-row .flap { flex:1; height:6px; border-radius:2px; background:rgba(130,241,234,0.12); border:1px solid rgba(130,241,234,0.2); position:relative; overflow:hidden; }
+    .aero-row .flap > b { position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--teal); transition:width 140ms ease; display:block; }
+    .aero-row .lbl { font-size:10.5px; color:var(--muted); letter-spacing:1px; }
+
+    .drive-help { position:absolute; right:12px; top:6px; width:min(312px, calc(100vw - 24px)); padding:10px 12px; border:1px solid var(--line); border-radius:7px;
+      background:rgba(6,8,11,0.6); backdrop-filter:blur(15px); font-size:11.5px; color:var(--muted); line-height:1.5; }
+    .drive-help strong { color:var(--ink); font-weight:700; }
+    .drive-help kbd { font:600 11px ui-monospace, monospace; background:rgba(255,255,255,0.08); border:1px solid var(--line); border-radius:3px; padding:1px 5px; color:var(--ink); }
+
+    .mode-panel { position:absolute; right:12px; bottom:10px; width:min(600px, calc(100vw - 24px)); max-height:min(66vh,648px); overflow:auto; padding:14px; display:none; border-radius:8px;
+      border:1px solid var(--line); background:rgba(8,9,12,0.88); backdrop-filter:blur(20px); box-shadow:0 25px 70px rgba(0,0,0,0.5); }
+    body.view-exterior .panel-exterior, body.view-cockpit .panel-cockpit, body.view-engine .panel-engine,
+    body.view-dynamics .panel-dynamics, body.view-circuit .panel-circuit { display:block; }
+
+    .panel-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+    h2 { margin:0; font-size:14.5px; font-weight:700; letter-spacing:0.4px; }
+    .small { font-size:11.5px; color:var(--muted); }
+    .indicator { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--teal); box-shadow:0 0 10px var(--teal); margin-right:5px; vertical-align:middle; }
+
+    .control-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+    .control-grid.cols2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .readout-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .readout { border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); border-radius:5px; padding:8px; min-height:58px; }
+    .readout b { display:block; font-size:16px; font-variant-numeric:tabular-nums; }
+    .readout span { color:var(--muted); font-size:10.5px; }
+    .divider { height:1px; background:var(--line); margin:12px 0; }
+
+    .studio-bar { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center; margin-top:10px; }
+    .studio-bar button { white-space:nowrap; border-color:rgba(130,241,234,0.4); }
+    .studio-bar .now { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .studio-bar .now.live { color:var(--teal-b); }
+
+    .bottombar { display:grid; grid-template-columns: minmax(320px,1fr) minmax(300px,0.84fr) minmax(250px,0.7fr); gap:10px; align-items:stretch; padding:0 12px 12px; }
+    .console, .gearbox, .telepad { border:1px solid var(--line); background:rgba(9,10,14,0.78); backdrop-filter:blur(16px); border-radius:7px; padding:10px; box-shadow:0 18px 46px rgba(0,0,0,0.4); }
+    .console { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+    .console button { min-width:0; }
+    .gearbox { display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:center; }
+    .gearbox .cluster { display:grid; grid-template-columns:repeat(2,46px); gap:6px; }
+    .gearbox .cluster button { min-height:30px; }
+    .paddle { font-weight:800; }
+    .pedals { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .pedal { min-height:58px; display:grid; grid-template-rows:auto auto auto; align-content:center; gap:5px; padding:6px 9px; border-radius:5px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:var(--muted); font-size:11px; }
+    .pedal span { display:flex; justify-content:space-between; }
+    .pedal span b { color:var(--ink); font-variant-numeric:tabular-nums; }
+    .pedal input[type="range"] { width:100%; margin:0; accent-color:var(--teal); cursor:ns-resize; }
+    .pedal.brake input[type="range"] { accent-color:#ff8a8a; }
+    .pedal i { width:100%; height:6px; border-radius:2px; display:block; background:rgba(255,255,255,0.1); overflow:hidden; }
+    .pedal i::before { content:""; display:block; height:100%; width:var(--level,0%); background:var(--teal-b); transition:width 70ms linear; }
+    .pedal.brake i::before { background:#ff8a8a; }
+
+    /* telemetry mini pad (G + boost dial) */
+    .telepad { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+    .gforce { height:84px; position:relative; border-radius:6px; border:1px solid rgba(255,255,255,0.1); overflow:hidden;
+      background: radial-gradient(circle at 50% 50%, rgba(52,198,191,0.10), rgba(8,10,13,0.9) 70%); }
+    .gforce::before, .gforce::after { content:""; position:absolute; background:rgba(255,255,255,0.12); }
+    .gforce::before { left:50%; top:6px; bottom:6px; width:1px; }
+    .gforce::after { top:50%; left:6px; right:6px; height:1px; }
+    .gdot { position:absolute; width:12px; height:12px; border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%);
+      background:radial-gradient(circle at 35% 30%, #c9fffb, var(--teal)); box-shadow:0 0 12px var(--teal); transition:left 90ms linear, top 90ms linear; }
+    .tele-actions { display:grid; grid-template-columns:repeat(2,40px); gap:5px; }
+
+    /* art panels */
+    .art-wrap { position:relative; margin:4px 0 12px; border:1px solid rgba(255,255,255,0.1); border-radius:7px; overflow:hidden;
+      background:linear-gradient(180deg, #181c22 0%, #0f1318 46%, #0a0c10 100%); }
+    .art-wrap svg { display:block; width:100%; height:auto; }
+
+    /* exterior walkaround */
+    .car-art-wrap { height:262px; position:relative; margin:6px 0 12px; border:1px solid rgba(255,255,255,0.12); border-radius:6px;
+      background: linear-gradient(180deg, rgba(40,52,64,0.5) 0%, rgba(18,24,30,0.5) 48%, rgba(14,16,19,0.7) 49%, rgba(9,10,12,0.82) 100%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 56px);
+      overflow:hidden; }
+    .car-art-wrap::before { content:""; position:absolute; left:0; right:0; bottom:46px; height:2px; background:rgba(130,241,234,0.22); }
+    .huayra-side { position:absolute; left:6%; right:6%; bottom:48px; height:120px; }
+    /* low, wide, mid-engined carbon body */
+    .body-shell { position:absolute; inset:30px 20px 16px; border-radius:40px 30px 18px 14px / 60px 40px 16px 14px;
+      background: linear-gradient(180deg, #2a2d33 0%, #1a1d22 44%, #101216 56%, #0a0b0e 100%);
+      border:1px solid rgba(150,160,170,0.25);
+      box-shadow: inset 0 14px 26px rgba(255,255,255,0.05), inset 0 -16px 22px rgba(0,0,0,0.5), 0 12px 30px rgba(0,0,0,0.55); }
+    .body-shell::before { /* carbon weave sheen */ content:""; position:absolute; inset:0; border-radius:inherit; opacity:0.5;
+      background: repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 2px, rgba(0,0,0,0) 2px 5px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0 2px, rgba(0,0,0,0) 2px 5px); }
+    .canopy { position:absolute; left:30%; top:-26px; width:44%; height:46px; border-radius:46px 36px 0 0;
+      background: linear-gradient(180deg, rgba(150,200,210,0.55) 0 42%, rgba(10,14,18,0.9) 43% 100%);
+      border:1px solid rgba(170,220,230,0.35); border-bottom:0; clip-path: polygon(12% 100%, 26% 12%, 74% 0, 92% 100%); }
+    .splitter { position:absolute; left:6%; right:60%; bottom:6px; height:6px; background:linear-gradient(90deg, #05060a, #1a1d22); border-radius:2px; }
+    .sidepod { position:absolute; right:18%; bottom:24px; width:18%; height:30px; border-radius:0 18px 2px 2px;
+      background:linear-gradient(180deg,#05060a,#15181d); border:1px solid rgba(255,255,255,0.08); }
+    .quad-exhaust { position:absolute; right:1.5%; bottom:30%; width:30px; height:34px; }
+    .quad-exhaust i { position:absolute; width:11px; height:11px; border-radius:50%; background:radial-gradient(circle at 40% 35%, #f4f7fa, #6a7079 60%, #14161b);
+      box-shadow: inset 0 0 4px rgba(0,0,0,0.7); transition: box-shadow 120ms ease; }
+    .quad-exhaust i:nth-child(1){ left:0; top:0;} .quad-exhaust i:nth-child(2){ left:14px; top:0;}
+    .quad-exhaust i:nth-child(3){ left:0; top:14px;} .quad-exhaust i:nth-child(4){ left:14px; top:14px;}
+    .quad-exhaust.hot i { box-shadow: inset 0 0 5px rgba(0,0,0,0.6), 0 0 12px rgba(255,120,40,0.85); }
+    .rear-wing { position:absolute; right:0; top:-2px; width:24%; height:8px; border-radius:2px;
+      background:linear-gradient(90deg, #0a0c10, #2a2d33); border:1px solid rgba(150,160,170,0.3);
+      transform-origin:center left; transform: rotate(calc(var(--wing-deg,6deg) * -1)); transition: transform 360ms ease; }
+    .front-flap { position:absolute; left:8%; bottom:14px; width:16%; height:5px; border-radius:2px; background:#1a1d22; border:1px solid rgba(150,160,170,0.25);
+      transform-origin:center right; transform: rotate(var(--flap-deg,0deg)); transition: transform 320ms ease; }
+    .door-g { position:absolute; top:-14px; left:30%; width:30%; height:78px;
+      border:1px solid rgba(150,160,170,0.4); border-radius:18px 14px 6px 4px;
+      background: linear-gradient(180deg, rgba(60,70,80,0.5), rgba(20,24,28,0.2));
+      transform-origin: 50% -8px; transition: transform 560ms cubic-bezier(.2,.9,.2,1), filter 560ms ease; }
+    .door-g.open { transform: rotate(-46deg); filter:brightness(1.1); }
+    .door-g::after { content:""; position:absolute; left:18%; right:18%; top:22px; height:24px; border-radius:8px 8px 3px 3px;
+      background:linear-gradient(180deg, rgba(110,180,190,0.5), rgba(8,12,16,0.9)); border:1px solid rgba(170,220,230,0.3); }
+    .wheel { position:absolute; width:78px; height:78px; bottom:-22px; border-radius:50%;
+      background: radial-gradient(circle, #060708 0 16%, #1a1d22 17% 20%, #0c0e12 21% 44%, var(--teal) 45% 49%, #050607 50% 100%);
+      box-shadow: inset 0 0 0 7px #050505, 0 12px 20px rgba(0,0,0,0.55); }
+    .wheel::before { content:""; position:absolute; inset:14px; border-radius:50%;
+      background: conic-gradient(from var(--wheel-rot,0deg), rgba(200,210,220,0.85) 0 5deg, transparent 5deg 30deg, rgba(52,198,191,0.7) 30deg 36deg, transparent 36deg 72deg);
+      mask: radial-gradient(circle, transparent 0 30%, #000 31% 100%); }
+    .wheel::after { content:""; position:absolute; inset:30px; border-radius:50%; background:#0a0b0e; box-shadow:0 0 0 2px rgba(52,198,191,0.5); }
+    .wheel.front { right:9%; } .wheel.rear { left:11%; }
+
+    /* engine bay */
+    .engine-bay { height:330px; position:relative; border:1px solid rgba(255,255,255,0.1); border-radius:7px; overflow:hidden;
+      background: linear-gradient(180deg, rgba(10,12,16,0.96), rgba(16,19,24,0.86)); }
+    .v12 { position:absolute; left:24%; right:24%; top:24%; height:120px; border-radius:8px;
+      background: linear-gradient(135deg,#2a2f37,#0e1117); border:1px solid rgba(150,160,170,0.3);
+      box-shadow: inset 0 0 24px rgba(0,0,0,0.6); }
+    .v12::before, .v12::after { content:""; position:absolute; top:14px; bottom:14px; width:40%;
+      background: repeating-linear-gradient(90deg, rgba(200,210,220,0.18) 0 4px, rgba(0,0,0,0.2) 4px 10px); border-radius:4px; }
+    .v12::before { left:5%; transform: skewX(-8deg); } .v12::after { right:5%; transform: skewX(8deg); }
+    .turbo { position:absolute; width:46px; height:46px; border-radius:50%; top:46%;
+      background: radial-gradient(circle at 40% 35%, #cfd6dd, #4a5058 60%, #14161b);
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.7); }
+    .turbo::after { content:""; position:absolute; inset:12px; border-radius:50%;
+      background: conic-gradient(from var(--turbo-rot,0deg), #aab3bc 0 18deg, #2a2f37 18deg 36deg); }
+    .turbo.left { left:9%; } .turbo.right { right:9%; }
+    .bay-exhaust { position:absolute; left:42%; right:42%; bottom:18px; height:30px; display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+    .bay-exhaust i { border-radius:4px 4px 2px 2px; background: linear-gradient(180deg,#3a3f47,#1a1d22); border:1px solid rgba(150,160,170,0.3); transition: box-shadow 120ms; }
+    .engine-bay.glow .bay-exhaust i { box-shadow: 0 0 14px rgba(255,110,40,0.85); }
+    .engine-bay .cover { position:absolute; inset:0; background:linear-gradient(180deg, rgba(20,24,30,0.97), rgba(10,12,16,0.99));
+      border-bottom:1px solid rgba(130,241,234,0.2); transform-origin:top; transform: translateY(var(--cover, -101%)); transition: transform 620ms cubic-bezier(.2,.9,.2,1);
+      display:grid; place-items:center; color:var(--muted); font-size:12px; letter-spacing:2px; }
+    .heat-haze { position:absolute; left:30%; right:30%; top:14%; height:14%; opacity:var(--haze,0); transition:opacity 400ms;
+      background: repeating-linear-gradient(90deg, rgba(255,160,80,0.0) 0 10px, rgba(255,160,80,0.12) 10px 20px); filter:blur(2px); }
+
+    /* dynamics: drivetrain + aero + suspension */
+    .systems-visual { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:12px; }
+    .drivetrain { min-height:256px; position:relative; border:1px solid rgba(255,255,255,0.1); border-radius:7px; overflow:hidden;
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)); }
+    .gear-stack { position:absolute; left:18px; top:30px; width:78px; bottom:30px; border:1px solid rgba(255,255,255,0.14); border-radius:6px;
+      background:rgba(255,255,255,0.05); display:grid; grid-template-rows:repeat(7,1fr); gap:2px; padding:6px; }
+    .gear-stack i { display:grid; place-items:center; border-radius:3px; background:rgba(255,255,255,0.07); color:var(--muted); font-size:11px; font-style:normal; }
+    .gear-stack i.active { background:rgba(240,162,60,0.4); color:#fff1da; }
+    .shifter-link { position:absolute; left:104px; top:50%; width:60px; height:8px; background:linear-gradient(90deg, rgba(200,210,220,0.5), rgba(130,241,234,0.7));
+      transform-origin:left center; transform: translateY(var(--link-y,0px)) rotate(var(--link-rot,0deg)); transition: transform 180ms ease; border-radius:2px; }
+    .aero-diagram { position:absolute; right:14px; top:24px; left:180px; height:120px; border:1px dashed rgba(130,241,234,0.25); border-radius:6px; }
+    .aero-diagram .car { position:absolute; left:10%; right:10%; top:46%; height:14px; background:linear-gradient(90deg,#1a1d22,#2a2f37); border-radius:8px; }
+    .aero-diagram .fl, .aero-diagram .rl { position:absolute; height:4px; background:var(--teal); border-radius:2px; transition: transform 280ms ease, opacity 280ms; }
+    .aero-diagram .fl { left:8%; width:16%; top:60%; transform-origin:right; transform: rotate(var(--df-deg,0deg)); }
+    .aero-diagram .rl { right:6%; width:18%; top:30%; transform-origin:left; transform: rotate(calc(var(--dr-deg,0deg) * -1)); }
+    .aero-diagram .arrow { position:absolute; left:50%; top:8%; width:2px; height:0; background:linear-gradient(180deg, transparent, var(--teal-b)); transition:height 200ms; }
+    .driveshaft { position:absolute; left:170px; right:60px; top:74%; height:7px; border-radius:2px;
+      background:linear-gradient(90deg, rgba(130,241,234,0.25), rgba(255,255,255,0.4), rgba(130,241,234,0.25)); transform-origin:left center; transform: rotate(var(--shaft-angle,0deg)); }
+    .suspension { border:1px solid rgba(255,255,255,0.1); border-radius:7px; padding:10px; min-height:256px; background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)); }
+    .ride-window { height:130px; position:relative; border-radius:5px; border:1px solid rgba(255,255,255,0.1); overflow:hidden;
+      background: linear-gradient(180deg, rgba(40,60,72,0.24), transparent), repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 18px); }
+    .road-wave, .cabin-wave { position:absolute; left:0; right:0; height:2px; top:50%; background:var(--amber); box-shadow:0 0 11px currentColor; }
+    .cabin-wave { color:var(--teal-b); background:var(--teal-b); top:32%; }
+
+    /* circuit */
+    .smart-screen { border:1px solid rgba(255,255,255,0.1); border-radius:7px; min-height:380px; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr); background:#05080c; overflow:hidden; }
+    .map { position:relative; min-height:380px; background:#070d12; overflow:hidden; }
+    .map canvas { position:absolute; inset:0; width:100%; height:100%; }
+    .computer-controls { padding:12px; display:grid; align-content:start; gap:10px; background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)); }
+    .circuit-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+    .circuit-grid button.active { background:linear-gradient(180deg, rgba(52,198,191,0.3), rgba(20,90,86,0.18)); border-color:rgba(130,241,234,0.8); }
+    .status-list { display:grid; gap:6px; font-size:11.5px; color:var(--muted); }
+    .status-list div { display:flex; justify-content:space-between; gap:8px; padding:6px 8px; border-radius:5px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); }
+    .status-list strong { color:var(--ink); font-weight:600; }
+    .cruise-set { display:inline-flex; align-items:center; gap:6px; }
+    .cruise-set button { min-height:22px; min-width:24px; padding:0 6px; border-radius:4px; line-height:1; font-weight:700; }
+    .cruise-set strong { min-width:64px; text-align:center; }
+    .voice { display:grid; grid-template-columns:1fr auto; gap:7px; }
+    .voice input { min-width:0; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:var(--ink); border-radius:5px; padding:8px 9px; }
+
+    .toast { position:fixed; left:50%; bottom:122px; transform:translateX(-50%) translateY(20px); min-width:min(440px, calc(100vw - 24px)); max-width:min(680px, calc(100vw - 24px));
+      padding:11px 14px; border-radius:7px; border:1px solid rgba(130,241,234,0.34); background:rgba(8,10,13,0.92); backdrop-filter:blur(15px);
+      box-shadow:0 24px 60px rgba(0,0,0,0.5); color:var(--ink); opacity:0; pointer-events:none; transition:opacity 200ms ease, transform 200ms ease; font-size:13px; z-index:40; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast .who { color:var(--teal-b); font-weight:700; margin-right:6px; letter-spacing:0.5px; }
+
+    input[type="range"] { width:100%; accent-color:var(--teal); }
+
+    .mobile-pad { position:fixed; left:10px; bottom:200px; display:none; grid-template-columns:repeat(3,48px); grid-template-rows:repeat(2,48px); gap:7px; pointer-events:auto; z-index:50;
+      padding:8px; border-radius:10px; border:1px solid var(--line); background:rgba(9,10,14,0.8); backdrop-filter:blur(13px); box-shadow:0 14px 36px rgba(0,0,0,0.5); }
+    .mobile-pad button { padding:0; display:grid; place-items:center; font-weight:700; }
+
+    .key-overlay { position:fixed; inset:0; z-index:60; display:grid; place-items:center;
+      background: radial-gradient(circle at 50% 32%, rgba(18,26,32,0.72), rgba(2,4,6,0.96)); backdrop-filter:blur(8px); transition:opacity 600ms ease; text-align:center; }
+    .key-overlay.hide { opacity:0; pointer-events:none; }
+    .key-card { padding:30px 34px; border:1px solid rgba(130,241,234,0.32); border-radius:10px; background:rgba(7,9,12,0.9); max-width:480px; box-shadow:0 30px 80px rgba(0,0,0,0.65); }
+    .key-card .pmark { width:70px; height:70px; margin:0 auto 14px; border:1.5px solid rgba(130,241,234,0.55); border-radius:50%; display:grid; place-items:center; color:var(--teal-b);
+      font-family:"Trajan Pro", Georgia, serif; font-size:24px; letter-spacing:2px; background:linear-gradient(160deg, rgba(255,255,255,0.1), rgba(0,0,0,0.34)); }
+    .key-card h1 { font-size:22px; margin-bottom:4px; }
+    .key-card p { color:var(--muted); font-size:13px; line-height:1.55; margin:6px 0 18px; }
+    .key-card .ignition { padding:14px 28px; font-size:15px; font-weight:700; border-color:rgba(240,162,60,0.7);
+      background:linear-gradient(180deg, rgba(240,162,60,0.32), rgba(120,70,18,0.26)); color:#fff1da; border-radius:6px; }
+    .key-card .ring { font-size:11px; color:var(--muted); margin-top:14px; letter-spacing:1px; }
+
+    @media (max-width:1040px) {
+      body { overflow:auto; }
+      .app { min-height:100vh; }
+      .topbar, .bottombar { grid-template-columns:1fr; }
+      .brand { min-height:0; }
+      .drive-help { display:none; }
+      .hud { top:120px; }
+      .mode-panel { left:12px; right:12px; width:auto; }
+      .console { grid-template-columns:repeat(3,1fr); }
+      .systems-visual, .smart-screen { grid-template-columns:1fr; }
+      .readout-grid, .control-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .mobile-pad { display:grid; }
+    }
+    @media (max-width:600px) {
+      .hud { width:calc(100vw - 16px); left:8px; top:168px; }
+      .mode-panel { left:8px; right:8px; bottom:8px; }
+      .bottombar { padding:0 8px 8px; }
+    }
+  </style>
+</head>
+<body class="view-drive">
+  <canvas id="worldCanvas" aria-label="Pagani Huayra BC driving view"></canvas>
+
+  <main class="app">
+    <header class="topbar">
+      <section class="brand">
+        <div class="mark">BC</div>
+        <h1>Pagani Huayra BC</h1>
+        <p>6.0L AMG twin-turbo V12 · 7-speed Xtrac sequential · active aerodynamics · carbo-titanium monocoque.</p>
+      </section>
+
+      <nav class="tabs" aria-label="View modes">
+        <button class="active" data-view="drive">Drive</button>
+        <button data-view="exterior">Exterior</button>
+        <button data-view="cockpit">Cockpit</button>
+        <button data-view="engine">Engine</button>
+        <button data-view="dynamics">Dynamics</button>
+        <button data-view="circuit">Circuit</button>
+      </nav>
+
+      <section class="quick" aria-label="Quick controls">
+        <button id="aeroBtn" class="active" title="Active aerodynamics">Aero</button>
+        <button id="doorAllBtn" title="Gullwing doors">Doors</button>
+        <button id="exhaustBtn" class="active" title="Titanium exhaust valve">Exhaust</button>
+        <button id="liftBtn" title="Front nose lift">Lift</button>
+        <button id="lightsBtn" class="active" title="Headlamps">Lights</button>
+        <button id="resetBtn" title="Reset to pit lane">Reset</button>
+      </section>
+    </header>
+
+    <section class="center-stage">
+      <aside class="hud">
+        <div class="speed-row">
+          <div>
+            <div class="speed" id="speedReadout">0</div>
+            <div class="unit">KM/H</div>
+          </div>
+          <div class="gear-tile" id="gearReadout">N</div>
+        </div>
+        <div class="meter-grid">
+          <div class="meter"><label><span>Engine</span><span id="rpmText">850 rpm</span></label><div class="bar rpm"><i id="rpmBar"></i></div></div>
+          <div class="meter"><label><span>Boost</span><span id="boostText">0.0 bar</span></label><div class="bar boost"><i id="boostBar"></i></div></div>
+          <div class="meter"><label><span>Throttle</span><span id="throttleText">0%</span></label><div class="bar"><i id="throttleBar"></i></div></div>
+          <div class="meter"><label><span>Brake</span><span id="brakeText">0%</span></label><div class="bar brake"><i id="brakeBar"></i></div></div>
+        </div>
+        <div class="aero-row">
+          <span class="lbl">AERO F</span>
+          <div class="flap"><b id="flapFront"></b></div>
+          <span class="lbl" id="aeroState">AUTO</span>
+          <div class="flap"><b id="flapRear"></b></div>
+          <span class="lbl">R</span>
+        </div>
+        <div class="warning" id="warning">Engage 1st with the right paddle, doors shut, and the BC is yours.</div>
+      </aside>
+
+      <aside class="drive-help">
+        <strong>Drive it yourself</strong><br>
+        <kbd>W</kbd>/<kbd>&uarr;</kbd> throttle · <kbd>S</kbd>/<kbd>&darr;</kbd>/<kbd>Space</kbd> brake · <kbd>A</kbd>/<kbd>D</kbd> steer · <kbd>E</kbd>/<kbd>Q</kbd> shift up/down · <kbd>R</kbd> reverse · <kbd>N</kbd> neutral · <kbd>L</kbd> launch · <kbd>H</kbd> horn.<br>
+        Or open <strong>Circuit</strong>, pick a track, and hand it to the test driver for a hot lap.
+      </aside>
+
+      <!-- EXTERIOR -->
+      <section class="mode-panel panel-exterior">
+        <div class="panel-title">
+          <h2>Exterior — Carbo-Titanium Coachwork</h2>
+          <span class="small"><span class="indicator"></span><span id="paintStatus">Exposed carbon over Argento, tricolore stripe</span></span>
+        </div>
+        <div class="car-art-wrap" id="exteriorArt">
+          <div class="huayra-side">
+            <div class="body-shell">
+              <div class="canopy"></div>
+              <div class="door-g" id="doorArt"></div>
+              <div class="rear-wing" id="rearWingArt"></div>
+              <div class="front-flap" id="frontFlapArt"></div>
+              <div class="sidepod"></div>
+              <div class="splitter"></div>
+              <div class="quad-exhaust" id="quadExhaustArt"><i></i><i></i><i></i><i></i></div>
+            </div>
+            <div class="wheel rear"></div>
+            <div class="wheel front"></div>
+          </div>
+        </div>
+        <div class="control-grid">
+          <button data-door="driver">Driver Gullwing</button>
+          <button data-door="passenger">Passenger Gullwing</button>
+          <button data-door="all">Both Doors</button>
+          <button id="wingBtn" class="active">Rear Wing</button>
+          <button id="exhaustBtn2" class="active">Exhaust Valve</button>
+          <button id="lightsBtn2" class="active">Headlamps</button>
+        </div>
+        <div class="divider"></div>
+        <div class="readout-grid">
+          <div class="readout"><b id="doorState">Closed</b><span>gullwing doors</span></div>
+          <div class="readout"><b id="rideHeightRead">Standard</b><span>pushrod ride height</span></div>
+          <div class="readout"><b>255 / 355</b><span>Pirelli P Zero Corsa</span></div>
+          <div class="readout"><b id="lightState">Auto</b><span>LED headlamps</span></div>
+        </div>
+      </section>
+
+      <!-- COCKPIT -->
+      <section class="mode-panel panel-cockpit">
+        <div class="panel-title">
+          <h2>Cockpit</h2>
+          <span class="small" id="cockpitStatus">Cognac leather, exposed aluminium, jewelled toggles</span>
+        </div>
+        <div class="art-wrap" id="cabinArt"><!-- svg injected --></div>
+        <div class="readout-grid">
+          <div class="readout"><b id="frontSeatRead">0&deg;</b><span>seat recline</span></div>
+          <div class="readout"><b id="climateRead">22&deg;C</b><span>cabin climate</span></div>
+          <div class="readout"><b id="beltRead">Open</b><span>6-point harness</span></div>
+          <div class="readout"><b id="modeReadCab">Sport</b><span>drive mode</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="control-grid">
+          <button id="frontForward">Recline +</button>
+          <button id="frontBack">Recline -</button>
+          <button id="harnessBtn">Harness</button>
+          <button id="heatBtn">Seat Heat</button>
+          <button id="coolBtn">Climate A/C</button>
+          <button id="ambientBtn" class="active">Ambient Light</button>
+          <button id="audioBtn">Cabin Audio</button>
+          <button id="shifterLightBtn" class="active">Gearbox Light</button>
+          <button id="startSwitchBtn" class="active">Ignition</button>
+        </div>
+        <div class="studio-bar">
+          <input type="file" id="studioFile" accept=".mp3,.m4a,.aac,.wav,.ogg,.oga,.flac,audio/*,.mp4,.mov,.m4v,.webm,.mkv,video/*" hidden>
+          <button id="studioUploadBtn" title="Upload an MP3 — or drop in an MP4/MOV and we lift the soundtrack out">&#9835; Upload your music</button>
+          <span class="small now" id="studioNowPlaying">Cabin silent — engine only</span>
+        </div>
+      </section>
+
+      <!-- ENGINE -->
+      <section class="mode-panel panel-engine">
+        <div class="panel-title">
+          <h2>Engine Bay — AMG M158 V12 Biturbo</h2>
+          <span class="small" id="engineStatus">6.0L V12 biturbo · 562 kW (764 PS / 754 hp) @ 5,900 · 1,000 Nm @ 2,500–5,600 · 350 km/h · 0–100 in 2.8 s · 1,218 kg</span>
+        </div>
+        <div class="engine-bay" id="engineBay">
+          <div class="heat-haze"></div>
+          <div class="turbo left" id="turboL"></div>
+          <div class="turbo right" id="turboR"></div>
+          <div class="v12"></div>
+          <div class="bay-exhaust"><i></i><i></i><i></i><i></i></div>
+          <div class="cover" id="engineCover">ENGINE COVER CLOSED</div>
+        </div>
+        <div class="control-grid">
+          <button id="coverBtn">Open Cover</button>
+          <button id="exhaustBtn3" class="active">Exhaust Valve</button>
+          <button id="fansBtn" class="active">Cooling Fans</button>
+          <button id="blipBtn">Blip Throttle</button>
+          <button id="coldStartBtn">Cold Start Flair</button>
+          <button id="antiLagBtn">Anti-Lag (Race)</button>
+        </div>
+        <div class="divider"></div>
+        <div class="readout-grid">
+          <div class="readout"><b id="oilTempRead">90&deg;C</b><span>oil temperature</span></div>
+          <div class="readout"><b id="waterTempRead">88&deg;C</b><span>coolant</span></div>
+          <div class="readout"><b id="boostRead">0.0 bar</b><span>manifold boost</span></div>
+          <div class="readout"><b id="egtRead">320&deg;C</b><span>exhaust gas</span></div>
+        </div>
+        <div class="studio-bar">
+          <input type="file" id="engineFile" accept=".mp3,.m4a,.aac,.wav,.ogg,.oga,.flac,audio/*" hidden>
+          <button id="engineLoadBtn" title="Load a real Huayra V12 recording — it becomes the engine voice, pitched with the revs">&#9835; Use a real V12 recording</button>
+          <span class="small now" id="engineSoundStatus">Engine voice: synthesised AMG V12</span>
+        </div>
+      </section>
+
+      <!-- DYNAMICS -->
+      <section class="mode-panel panel-dynamics">
+        <div class="panel-title">
+          <h2>Dynamics — Sequential · Active Aero · Pushrod</h2>
+          <span class="small" id="dynStatus">Race mode: dampers firm, ESC trail, aero hunting downforce</span>
+        </div>
+        <div class="systems-visual">
+          <div class="drivetrain">
+            <div class="gear-stack" id="gearStack"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i></div>
+            <div class="shifter-link" id="shifterLink"></div>
+            <div class="aero-diagram">
+              <div class="arrow" id="aeroArrow"></div>
+              <div class="car"></div>
+              <div class="fl" id="aeroFL"></div>
+              <div class="rl" id="aeroRL"></div>
+            </div>
+            <div class="driveshaft" id="driveshaft"></div>
+          </div>
+          <div class="suspension">
+            <div class="ride-window">
+              <div class="road-wave" id="roadWave"></div>
+              <div class="cabin-wave" id="cabinWave"></div>
+            </div>
+            <div class="divider"></div>
+            <div class="readout-grid">
+              <div class="readout"><b id="rideRead">Sport</b><span>suspension</span></div>
+              <div class="readout"><b id="downforceRead">0 kg</b><span>downforce</span></div>
+              <div class="readout"><b id="gRead">0.00 g</b><span>lateral load</span></div>
+              <div class="readout"><b id="brakeTempRead">120&deg;C</b><span>CCM brakes</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CIRCUIT -->
+      <section class="mode-panel panel-circuit">
+        <div class="panel-title">
+          <h2>Circuit &amp; Telemetry</h2>
+          <span class="small" id="computerStatus">Co-Pilot — your in-car race engineer</span>
+        </div>
+        <div class="smart-screen">
+          <div class="map"><canvas id="mapCanvas"></canvas></div>
+          <div class="computer-controls">
+            <div class="circuit-grid" id="circuitGrid">
+              <button data-circuit="Pista di Modena">Pista di Modena</button>
+              <button data-circuit="Mountain Pass">Mountain Pass</button>
+              <button data-circuit="Nardò Ring">Nardò Ring</button>
+              <button data-circuit="Autostrada">Autostrada</button>
+              <button data-circuit="Coastal Run">Coastal Run</button>
+              <button data-circuit="Vallelunga">Vallelunga</button>
+            </div>
+            <button id="testDriverBtn">Hand to Test Driver</button>
+            <div class="voice">
+              <input id="voiceInput" autocomplete="off" placeholder="“take me to Nardò”, “race mode”, “launch”, “open the doors”">
+              <button id="voiceBtn">Tell Co-Pilot</button>
+            </div>
+            <div class="status-list">
+              <div><span>Circuit</span><strong id="navRead">Free run</strong></div>
+              <div><span>Lap / Best</span><strong id="lapRead">—</strong></div>
+              <div><span>Distance to go</span><strong id="distRead">—</strong></div>
+              <div><span>Driver</span><strong id="driverRead">You</strong></div>
+              <div><span>Cruise</span><span class="cruise-set"><button id="cruiseDown" title="Slower">&minus;</button><strong id="cruiseRead">Off</strong><button id="cruiseUp" title="Faster">+</button></span></div>
+              <div><span>Traction control</span><strong id="tcRead">On</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer class="bottombar">
+      <section class="console" aria-label="Vehicle functions">
+        <button id="modeBtn" class="race active">Race</button>
+        <button id="escBtn" class="active toggle">ESC</button>
+        <button id="launchBtn">Launch</button>
+        <button id="pitBtn" class="toggle">Pit Limit</button>
+        <button id="hornBtn">Horn</button>
+      </section>
+
+      <section class="gearbox" aria-label="Gears and pedals">
+        <div class="cluster">
+          <button data-gear="R">R</button>
+          <button data-gear="N" class="active">N</button>
+          <button class="paddle" id="downPaddle" title="Downshift (Q)">&minus;</button>
+          <button class="paddle" id="upPaddle" title="Upshift (E)">+</button>
+        </div>
+        <div class="pedals">
+          <div class="pedal">
+            <span>Throttle <b id="throttleSliderVal">0%</b></span>
+            <input type="range" id="throttleSlider" min="0" max="100" value="0" step="1" aria-label="Throttle">
+            <i id="throttlePedal"></i>
+          </div>
+          <div class="pedal brake">
+            <span>Brake <b id="brakeSliderVal">0%</b></span>
+            <input type="range" id="brakeSlider" min="0" max="100" value="0" step="1" aria-label="Brake">
+            <i id="brakePedal"></i>
+          </div>
+        </div>
+      </section>
+
+      <section class="telepad" aria-label="Telemetry">
+        <div>
+          <div class="small">G / boost telemetry</div>
+          <div class="gforce" id="gforce"><div class="gdot" id="gdot"></div></div>
+        </div>
+        <div class="tele-actions">
+          <button id="lapResetBtn" title="Reset lap timer">Lap</button>
+          <button id="dataBtn" title="Toggle telemetry overlay" class="active">HUD</button>
+          <button id="wetBtn" title="Wet mode">Wet</button>
+          <button id="raceBtn" title="Race mode">Race</button>
+        </div>
+      </section>
+    </footer>
+  </main>
+
+  <div class="mobile-pad" aria-label="Touch controls">
+    <span></span><button data-pad="up">Go</button><span></span>
+    <button data-pad="left">&#9664;</button><button data-pad="down">Brake</button><button data-pad="right">&#9654;</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="key-overlay" id="keyOverlay">
+    <div class="key-card">
+      <div class="pmark">PB</div>
+      <h1>Macchina del Tempo</h1>
+      <p>Settle into the carbon tub. The AMG V12 will catch with a flare, the gullwings draw shut, and the titanium exhaust will clear its throat. Drive it yourself, or hand it to the test driver.</p>
+      <button class="ignition" id="startBtn">Press to Start</button>
+      <div class="ring">Horacio Pagani · Modena, Italy</div>
+    </div>
+  </div>
+
+  <script type="module">
+/* ===========================================================================
+   PAGANI HUAYRA BC — "Macchina del Tempo" (browser hyper-coupe simulator)
+   Real Web-Audio AMG V12, factory-matched physics (0–100 km/h 2.8 s, 350 km/h
+   governed, 562 kW, 1,000 Nm, 1,218 kg), active aerodynamics, a 7-speed Xtrac
+   sequential you actually shift, and a test driver who can lap for you.
+   Performances are researched, not copied — see huayra-perf-test.mjs.
+   =========================================================================== */
+
+/* ===== data: circuits ===== */
+const CIRCUITS = {
+  "Pista di Modena": { dist: 3200, env: "track",    limitKmh: 200, blurb: "the Pagani test track at Modena" },
+  "Mountain Pass":   { dist: 6400, env: "mountain", limitKmh: 130, blurb: "the Futa mountain pass" },
+  "Nardò Ring":      { dist: 12600, env: "ring",    limitKmh: 350, blurb: "the Nardò high-speed ring" },
+  "Autostrada":      { dist: 9000, env: "highway",  limitKmh: 250, blurb: "the A1 autostrada" },
+  "Coastal Run":     { dist: 5200, env: "coast",    limitKmh: 150, blurb: "the Ligurian coast road" },
+  "Vallelunga":      { dist: 4085, env: "track",    limitKmh: 220, blurb: "the Vallelunga circuit" }
+};
+
+/* ===== data: vehicle spec — EXACT Pagani Huayra BC figures =====
+   Power 562 kW (764 PS / 754 hp) @ 5,900 rpm; torque 1,000 Nm @ 2,500–5,600 rpm;
+   dry weight 1,218 kg; top speed 350 km/h (217 mph); 0–100 km/h 2.8 s;
+   7-speed Xtrac transverse sequential; Mercedes-AMG M158 6.0 L (5,980 cc) biturbo V12. */
+const KMH = 1 / 3.6;            // m/s per km/h
+const MPH = 0.44704;
+const SPEC = {
+  name: "Pagani Huayra BC",
+  engineLabel: "Mercedes-AMG M158 6.0 L twin-turbo V12",
+  displacementCc: 5980,
+  massKg: 1218,                 // dry weight (manufacturer)
+  rotInertia: 1.05,
+  peakPowerW: 562000,           // 562 kW = 764 PS = 754 hp @ 5,900 rpm
+  peakPowerPS: 764,
+  peakPowerHp: 754,
+  peakPowerRpm: 5900,
+  peakTorqueNm: 1000,           // @ 2,500–5,600 rpm
+  torqueLoRpm: 2500,
+  torqueHiRpm: 5600,
+  idleRpm: 850,
+  redlineRpm: 6300,
+  finalDrive: 3.15,
+  gearRatios: [3.40, 2.40, 1.85, 1.48, 1.20, 0.96, 0.72],
+  reverseRatio: 3.10,
+  wheelRadiusM: 0.355,          // 355/25 ZR21 rear
+  dragCd: 0.35,                 // low-drag config; active aero adds drag
+  frontalAreaM2: 1.92,
+  rollingResistance: 0.013,
+  airDensity: 1.225,
+  drivelineEff: 0.90,
+  tractionCoeff: 1.124,         // calibrated -> 0–100 km/h = 2.80 s with launch control
+  topSpeedKmh: 350,             // governed (217 mph)
+  topSpeedMps: 350 * KMH,
+  zeroTo100Kmh: 2.8,            // s (manufacturer)
+  brakeMaxMps2: 17.0,           // Brembo carbon-ceramic + Corsa + downforce (~1.73 g)
+  shiftTimeS: 0.10,             // single-clutch sequential, sharp
+  launchRpm: 5200,
+  aeroClA: 2.6,                 // downforce coefficient*area (lumped)
+  aeroDragAdd: 0.62             // fraction added to CdA when flaps fully deployed
+};
+
+/* ===== shared context ===== */
+{
+  const canvas = document.getElementById("worldCanvas");
+  const ctx = canvas.getContext("2d");
+
+  const state = {
+    time: 0, lastTime: performance.now(),
+    speedMps: 0, distanceM: 0,
+    laneOffset: 0, headingRel: 0, steer: 0,
+    padThrottle: 0, padBrake: 0,
+    cruiseSetKmh: 120, adaptiveCruise: false,
+    windowsOpen: false,
+    throttle: 0, brake: 0,
+    rpm: SPEC.idleRpm, torqueNm: 0, boostBar: 0,
+    gearMode: "N",                 // N, R, or "G" (a forward gear given by curGear)
+    curGear: 1, shiftTimer: 0, shiftFrom: 1,
+    wheelRotation: 0,
+    curvature: 0, lateralG: 0, bodyRoll: 0,
+    doors: { driver: false, passenger: false },
+    harness: false,
+    driveMode: "race",             // wet | sport | race
+    esc: true, tractionControl: true, launchArmed: false, launchActive: false, pitLimiter: false,
+    testDriver: false,
+    lights: true, hazards: false, horn: false,
+    aeroAuto: true, aeroDeploy: 0, wingManual: 1, frontFlap: 0,
+    exhaustValve: true, antiLag: false, coolingFans: true, engineCoverOpen: false, ignition: true,
+    rideHeight: 0,                 // 0 standard, 1 lifted, -1 race-low
+    heat: false, cool: false, ambient: true, audioCabin: false, shifterLight: true,
+    frontRecline: 0, seatTempC: 22,
+    oilTempC: 90, waterTempC: 88, brakeTempC: 120, egtC: 320,
+    downforceN: 0, roadInputG: 0, cabinHeaveG: 0,
+    shake: { x: 0, y: 0, rot: 0 },
+    blinker: 0, blinkPhase: 0, blinkOn: false,
+    toastTimer: 0,
+    keys: Object.create(null),
+    traffic: [], scenery: [], roadside: [],
+    route: { active: false, name: "Free run", env: "track", totalM: 0, remainingM: 0, arrived: false },
+    corners: [],
+    lap: { running: false, startDist: 0, lastMs: 0, bestMs: 0, curMs: 0 },
+    dayPhase: 0.30,
+    dataHud: true,
+    started: false
+  };
+
+  const el = {};
+  for (const id of [
+    "speedReadout","gearReadout","rpmText","rpmBar","boostText","boostBar","throttleText","throttleBar",
+    "brakeText","brakeBar","warning","aeroState","flapFront","flapRear","beltRead","doorState","rideHeightRead","lightState",
+    "paintStatus","frontSeatRead","climateRead","modeReadCab","cockpitStatus","engineStatus","dynStatus","roadWave","cabinWave",
+    "rideRead","downforceRead","gRead","brakeTempRead","oilTempRead","waterTempRead","boostRead","egtRead",
+    "navRead","lapRead","distRead","driverRead","cruiseRead","tcRead","computerStatus","voiceInput","toast",
+    "throttlePedal","brakePedal","gforce","gdot","exteriorArt","cabinArt","doorArt","rearWingArt","frontFlapArt",
+    "quadExhaustArt","engineBay","engineCover","turboL","turboR","gearStack","shifterLink","driveshaft",
+    "aeroFL","aeroRL","aeroArrow","mapCanvas","keyOverlay","startBtn"
+  ]) el[id] = document.getElementById(id);
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * clamp(t, 0, 1);
+  const kmh = (mps) => mps / KMH;
+  const approach = (cur, target, rate, dt) => cur + (target - cur) * (1 - Math.pow(rate, dt));
+
+  function showToast(message, who) {
+    el.toast.innerHTML = who ? `<span class="who">${who}</span>${message}` : message;
+    el.toast.classList.add("show");
+    state.toastTimer = 3.0;
+  }
+
+  window.PaganiApp = { canvas, ctx, KMH, MPH, SPEC, state, CIRCUITS, el, clamp, lerp, kmh, approach, showToast };
+}
+
+/* ===== media status helpers ===== */
+{
+  const app = window.PaganiApp;
+  const studioNowPlaying = document.getElementById("studioNowPlaying");
+  const engineSoundStatus = document.getElementById("engineSoundStatus");
+  function setNowPlaying(text, live) { if (!studioNowPlaying) return; studioNowPlaying.textContent = text; studioNowPlaying.classList.toggle("live", !!live); }
+  function setEngineStatus(text) { if (engineSoundStatus) engineSoundStatus.textContent = text; }
+  Object.assign(app, { setNowPlaying, setEngineStatus });
+}
+
+/* ===== audio: synthesised AMG twin-turbo V12, turbo spool, blow-off, exhaust crackle ===== */
+{
+  const app = window.PaganiApp;
+  const { SPEC, clamp } = app;
+
+  const audio = {
+    ctx: null, ready: false,
+    master: null, engineBus: null, windGain: null, roadGain: null,
+    turboGain: null, oscs: [], engFilter: null, noiseBuf: null,
+    musicGain: null, musicOn: false, musicNodes: [],
+    blowoffAt: 0, lastThrottle: 0, crackleAt: 0,
+
+    init() {
+      if (this.ready) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const c = new AC();
+      this.ctx = c;
+      this.master = c.createGain(); this.master.gain.value = 0.92; this.master.connect(c.destination);
+
+      this.engFilter = c.createBiquadFilter(); this.engFilter.type = "lowpass"; this.engFilter.frequency.value = 900; this.engFilter.Q.value = 1.1;
+      this.engineBus = c.createGain(); this.engineBus.gain.value = 0.0;
+      this.engFilter.connect(this.engineBus); this.engineBus.connect(this.master);
+
+      this.synthGain = c.createGain(); this.synthGain.gain.value = 1.0; this.synthGain.connect(this.engFilter);
+      this.recGain = c.createGain(); this.recGain.gain.value = 0.0; this.recGain.connect(this.engFilter);
+
+      const shaper = c.createWaveShaper(); shaper.curve = this._satCurve(3.2); shaper.oversample = "4x"; shaper.connect(this.synthGain);
+
+      // AMG V12 has a hard, metallic edge — heavier saw content + a high firing harmonic
+      const defs = [
+        { type: "sine",     mul: 0.5,  gain: 0.42, toShaper: false },
+        { type: "sawtooth", mul: 1.0,  gain: 0.55, toShaper: true  },
+        { type: "sawtooth", mul: 1.008,gain: 0.34, toShaper: true  },
+        { type: "sawtooth", mul: 2.0,  gain: 0.22, toShaper: true  },
+        { type: "square",   mul: 3.0,  gain: 0.10, toShaper: true  },
+        { type: "square",   mul: 1.5,  gain: 0.07, toShaper: true  }
+      ];
+      this.oscs = defs.map(d => {
+        const o = c.createOscillator(); o.type = d.type; o.frequency.value = 85 * d.mul;
+        const g = c.createGain(); g.gain.value = d.gain;
+        o.connect(g); g.connect(d.toShaper ? shaper : this.synthGain); o.start();
+        return { o, g, mul: d.mul };
+      });
+
+      this.noiseBuf = this._noiseBuffer(2.0);
+      const mkNoise = (type, freq, q) => {
+        const src = c.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true;
+        const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
+        const g = c.createGain(); g.gain.value = 0;
+        src.connect(f); f.connect(g); g.connect(this.master); src.start();
+        return { src, f, g };
+      };
+      this.windNode = mkNoise("lowpass", 520);  this.windGain = this.windNode.g;
+      this.roadNode = mkNoise("bandpass", 190, 0.8); this.roadGain = this.roadNode.g;
+      this.turboNode = mkNoise("bandpass", 2400, 5); this.turboGain = this.turboNode.g;  // turbo whistle
+
+      this.musicGain = c.createGain(); this.musicGain.gain.value = 0; this.musicGain.connect(this.master);
+      this.ready = true;
+    },
+    resume() { if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); },
+    _satCurve(k) { const n = 1024, curve = new Float32Array(n); for (let i = 0; i < n; i++) { const x = (i/(n-1))*2-1; curve[i] = Math.tanh(k*x); } return curve; },
+    _noiseBuffer(sec) { const c = this.ctx, len = Math.floor(c.sampleRate*sec); const b = c.createBuffer(1, len, c.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random()*2-1; return b; },
+    _set(param, value, tc) { if (!this.ready) return; param.setTargetAtTime(value, this.ctx.currentTime, tc || 0.04); },
+
+    update(s, dt) {
+      if (!this.ready) return;
+      const t = this.ctx.currentTime;
+      if (!s.ignition) { this._set(this.engineBus.gain, 0, 0.1); this._set(this.turboGain.gain, 0, 0.1); return; }
+      const firing = Math.max(20, (s.rpm / 60) * 6);   // V12: 6 firing pulses / rev
+      for (const osc of this.oscs) osc.o.frequency.setTargetAtTime(firing * osc.mul, t, 0.025);
+
+      const rpmN = clamp(s.rpm / SPEC.redlineRpm, 0, 1);
+      const load = clamp(s.throttle, 0, 1);
+      const spd = Math.abs(s.speedMps);
+      const valve = s.exhaustValve ? 1 : 0.45;            // titanium exhaust valve
+      const modeGain = s.driveMode === "race" ? 1.0 : s.driveMode === "sport" ? 0.82 : 0.62;
+
+      const engLevel = (0.05 + load * 0.5 + rpmN * 0.22) * valve * modeGain;
+      const cutoff = 360 + s.rpm * 0.24 + load * 3200 + (s.exhaustValve ? 900 : 0);
+      const turbo = clamp(s.boostBar, 0, 1.4) * (0.10 + rpmN * 0.42) * (s.exhaustValve ? 1 : 0.8);
+      const turboFreq = 1200 + rpmN * 3200 + s.boostBar * 900;
+      const wind = clamp((spd - 6) / 70, 0, 1) * (s.windowsOpen ? 0.22 : 0.12);
+      const windFreq = 420 + spd * 16;
+      const road = clamp(spd / 60, 0, 1) * 0.13 * (1 + s.roadInputG * 2.2);
+
+      this._set(this.engineBus.gain, engLevel, 0.05);
+      this._set(this.engFilter.frequency, clamp(cutoff, 200, 8200), 0.05);
+      this._set(this.turboGain.gain, turbo, 0.06);
+      this.turboNode.f.frequency.setTargetAtTime(turboFreq, t, 0.06);
+      this._set(this.windGain.gain, wind, 0.1);
+      this.windNode.f.frequency.setTargetAtTime(windFreq, t, 0.1);
+      this._set(this.roadGain.gain, road, 0.08);
+
+      if (this.synthGain && this.recGain) {
+        this._set(this.synthGain.gain, this.useRecording ? 0 : 1, 0.12);
+        this._set(this.recGain.gain, this.useRecording ? 1 : 0, 0.12);
+      }
+      if (this.useRecording && this.engineSrc) {
+        const rate = 0.8 + rpmN * 1.5;
+        this.engineSrc.playbackRate.setTargetAtTime(rate, t, 0.05);
+      }
+
+      // turbo blow-off on a quick lift
+      if (this.lastThrottle - load > 0.25 && s.rpm > 2600 && t - this.blowoffAt > 0.4) { this.blowoffAt = t; this.blowoff(); }
+      // titanium exhaust crackle/overrun on trailing throttle at revs (Race + Sport)
+      const overrun = load < 0.12 && s.rpm > 3200 && s.driveMode !== "wet" && (s.exhaustValve || s.antiLag);
+      if ((overrun || (s.antiLag && load > 0.5 && s.rpm > 4500)) && t - this.crackleAt > 0.05 + Math.random()*0.12) {
+        this.crackleAt = t; this.crackle();
+      }
+      this.lastThrottle = load;
+    },
+
+    blowoff() {
+      const c = this.ctx, t = c.currentTime;
+      const src = c.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true;
+      const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 3600; f.Q.value = 1.4;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      src.connect(f); f.connect(g); g.connect(this.master); src.start(t); src.stop(t + 0.32);
+    },
+    crackle() {
+      const c = this.ctx, t = c.currentTime;
+      const src = c.createBufferSource(); src.buffer = this.noiseBuf;
+      const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1600 + Math.random()*1800; f.Q.value = 3;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.10 + Math.random()*0.08, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+      src.connect(f); f.connect(g); g.connect(this.master); src.start(t); src.stop(t + 0.08);
+    },
+    _env(node, g, t, peak, attack, decay) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay); },
+    startupFlair() { // V12 catch + rev flare on ignition
+      if (!this.ready) return; const c = this.ctx, t = c.currentTime;
+      const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.setValueAtTime(70, t);
+      o.frequency.exponentialRampToValueAtTime(300, t + 0.5); o.frequency.exponentialRampToValueAtTime(120, t + 1.4);
+      const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1400;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+      o.connect(f); f.connect(g); g.connect(this.master); o.start(t); o.stop(t + 1.7);
+    },
+    blip(strength) { // throttle blip / downshift rev-match
+      if (!this.ready) return; const c = this.ctx, t = c.currentTime; strength = strength || 1;
+      const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.setValueAtTime(150, t);
+      o.frequency.exponentialRampToValueAtTime(150 + 260 * strength, t + 0.08); o.frequency.exponentialRampToValueAtTime(120, t + 0.34);
+      const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 2400;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.2 * strength, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
+      o.connect(f); f.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.4);
+      this.crackle();
+    },
+    click(freq) { if (!this.ready) return; const c = this.ctx, t = c.currentTime; const src = c.createBufferSource(); src.buffer = this.noiseBuf; const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = freq || 2400; f.Q.value = 6; const g = c.createGain(); this._env(src, g, t, 0.18, 0.001, 0.03); src.connect(f); f.connect(g); g.connect(this.master); src.start(t); src.stop(t + 0.05); },
+    chime(notes) { if (!this.ready) return; const c = this.ctx; let t = c.currentTime; (notes || [659, 880, 1175]).forEach((freq, i) => { const o = c.createOscillator(); o.type = "triangle"; o.frequency.value = freq; const g = c.createGain(); const tt = t + i * 0.13; g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(0.14, tt + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.9); o.connect(g); g.connect(this.master); o.start(tt); o.stop(tt + 1.0); }); },
+    hornNode: null,
+    horn(on) {
+      if (!this.ready) return; const c = this.ctx, t = c.currentTime;
+      if (on && !this.hornNode) {
+        const mk = (freq) => { const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq; return o; };
+        const o1 = mk(420), o2 = mk(530); const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2000; f.Q.value = 0.7;
+        const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+        o1.connect(f); o2.connect(f); f.connect(g); g.connect(this.master); o1.start(t); o2.start(t);
+        this.hornNode = { o1, o2, g };
+      } else if (!on && this.hornNode) { const { o1, o2, g } = this.hornNode; const tt = c.currentTime; g.gain.setTargetAtTime(0.0001, tt, 0.04); o1.stop(tt + 0.2); o2.stop(tt + 0.2); this.hornNode = null; }
+    },
+    motor(dur) { if (!this.ready) return; const c = this.ctx, t = c.currentTime; dur = dur || 0.5; const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.value = 120; const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 420; f.Q.value = 3; const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.05); g.gain.setTargetAtTime(0.0001, t + dur, 0.08); o.connect(f); f.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.4); },
+    whoosh(dur) { if (!this.ready) return; const c = this.ctx, t = c.currentTime; dur = dur || 0.6; const src = c.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true; const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.setValueAtTime(600, t); f.frequency.linearRampToValueAtTime(1600, t + dur); f.Q.value = 1.2; const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + dur * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); src.connect(f); f.connect(g); g.connect(this.master); src.start(t); src.stop(t + dur + 0.1); },
+    clunk(freq) { if (!this.ready) return; const c = this.ctx, t = c.currentTime; const o = c.createOscillator(); o.type = "square"; o.frequency.setValueAtTime(freq || 170, t); o.frequency.exponentialRampToValueAtTime((freq||170)*0.5, t + 0.06); const g = c.createGain(); this._env(o, g, t, 0.16, 0.002, 0.05); o.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.1); },
+
+    setMusic(on) {
+      if (!this.ready) return; const c = this.ctx, t = c.currentTime;
+      if (this.hasUserTrack()) {
+        if (on) { this.stopSynthPad(); this.musicGain.gain.setTargetAtTime(0.78, t, 0.4); this.mediaEl.play().catch(() => {}); this.musicOn = true; }
+        else { this.musicGain.gain.setTargetAtTime(0.0001, t, 0.4); if (this.mediaEl) this.mediaEl.pause(); this.musicOn = false; }
+        return;
+      }
+      if (on && !this.musicOn) {
+        this.musicOn = true;
+        const chord = [220, 277.18, 329.63, 440, 659.25];
+        this.musicNodes = chord.map((f, i) => { const o = c.createOscillator(); o.type = i < 3 ? "triangle" : "sine"; o.frequency.value = f; const lfo = c.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 0.13 + i * 0.03; const lg = c.createGain(); lg.gain.value = 1.6; lfo.connect(lg); lg.connect(o.frequency); const g = c.createGain(); g.gain.value = 0.02 / (i * 0.4 + 1); o.connect(g); g.connect(this.musicGain); o.start(); lfo.start(); return { o, lfo }; });
+        this.musicGain.gain.setTargetAtTime(0.5, t, 0.6);
+      } else if (!on && this.musicOn) { this.stopSynthPad(); }
+    },
+    stopSynthPad() { if (!this.ready) return; const t = this.ctx.currentTime; if (this.musicNodes && this.musicNodes.length) { this.musicGain.gain.setTargetAtTime(0.0001, t, 0.4); const nodes = this.musicNodes; this.musicNodes = []; setTimeout(() => nodes.forEach(n => { try { n.o.stop(); n.lfo.stop(); } catch (e) {} }), 1200); } if (!this.hasUserTrack()) this.musicOn = false; },
+    ensureMediaGraph() { if (!this.ready) this.init(); this.resume(); if (!this.mediaEl) { const v = document.createElement("video"); v.setAttribute("playsinline", ""); v.style.display = "none"; v.loop = true; v.preload = "auto"; v.crossOrigin = "anonymous"; document.body.appendChild(v); this.mediaEl = v; this.mediaSrcNode = this.ctx.createMediaElementSource(v); this.mediaSrcNode.connect(this.musicGain); } },
+    loadUserTrack(file) { this.ensureMediaGraph(); this.stopSynthPad(); if (this._userUrl) { try { URL.revokeObjectURL(this._userUrl); } catch (e) {} } this._userUrl = URL.createObjectURL(file); this.userTrackName = file.name.replace(/\.[^.]+$/, ""); this.userTrackIsVideo = /^video\//.test(file.type) || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name); this.mediaEl.src = this._userUrl; this.mediaEl.load(); return this.mediaEl; },
+    hasUserTrack() { return !!this.mediaEl && !!this._userUrl; },
+    setMusicVolume(v) { if (this.ready) this.musicGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.2); },
+    hasEngineRecording() { return !!this.engineBuffer; },
+    useEngineRecording(buffer) { if (!this.ready || !buffer) return; this.engineBuffer = buffer; if (this.engineSrc) { try { this.engineSrc.stop(); } catch (e) {} } const src = this.ctx.createBufferSource(); src.buffer = buffer; src.loop = true; src.connect(this.recGain); src.start(); this.engineSrc = src; this.useRecording = true; },
+    loadEngineFromArrayBuffer(arrayBuf) { if (!this.ready) this.init(); this.resume(); return this.ctx.decodeAudioData(arrayBuf).then(buf => { this.useEngineRecording(buf); return buf.duration; }); },
+    loadEngineFromFile(file) { return file.arrayBuffer().then(ab => this.loadEngineFromArrayBuffer(ab)); },
+    clearEngineRecording() { this.useRecording = false; if (this.engineSrc) { try { this.engineSrc.stop(); } catch (e) {} this.engineSrc = null; } this.engineBuffer = null; }
+  };
+
+  app.audio = audio;
+}
+
+/* ===== physics: engine, sequential box, aero, launch, world, test driver ===== */
+{
+  const app = window.PaganiApp;
+  const { state, el, SPEC, CIRCUITS, KMH, clamp, approach } = app;
+  const audio = app.audio;
+  const showToast = app.showToast;
+  const anyDoorOpen = () => app.anyDoorOpen();
+
+  /* --- engine torque (identical curve to the verification test) --- */
+  function engineTorque(rpm) {
+    const omega = rpm * Math.PI * 2 / 60;
+    const plateau = rpm <= SPEC.torqueLoRpm
+      ? 600 + 400 * clamp((rpm - SPEC.idleRpm) / (SPEC.torqueLoRpm - SPEC.idleRpm), 0, 1)
+      : SPEC.peakTorqueNm;
+    const powerCap = SPEC.peakPowerW / Math.max(omega, 1);     // caps power at exactly 562 kW
+    return Math.max(0, Math.min(plateau, powerCap));
+  }
+
+  function gearedRpm(gear) {
+    const wheelRps = Math.abs(state.speedMps) / (2 * Math.PI * SPEC.wheelRadiusM);
+    return wheelRps * SPEC.gearRatios[gear - 1] * SPEC.finalDrive * 60;
+  }
+
+  const modeMap = {
+    wet:   { upRpm: 3800, downRpm: 1500, throttleRate: 0.0024, tc: 0.78, exhaust: 0.6, damp: 0.45 },
+    sport: { upRpm: 5200, downRpm: 1900, throttleRate: 0.0016, tc: 0.96, exhaust: 0.82, damp: 0.7 },
+    race:  { upRpm: 6100, downRpm: 2200, throttleRate: 0.0009, tc: 1.0,  exhaust: 1.0,  damp: 1.0 }
+  };
+  function mode() { return modeMap[state.driveMode] || modeMap.sport; }
+
+  /* --- the sequential 7-speed: auto-shifts for you, but the paddles always win --- */
+  function manualShift(dir) {
+    if (state.gearMode !== "G") {
+      if (dir > 0) { app.setGear("G", 1); return; }
+      return;
+    }
+    const next = clamp(state.curGear + dir, 1, 7);
+    if (next === state.curGear) return;
+    state.shiftFrom = state.curGear; state.curGear = next; state.shiftTimer = SPEC.shiftTimeS;
+    state.manualHold = 1.4;
+    if (dir < 0) audio.blip(0.9); else audio.clunk(220);
+  }
+
+  function updateTransmission(dt) {
+    if (state.manualHold > 0) state.manualHold -= dt;
+    if (state.shiftTimer > 0) { state.shiftTimer -= dt; return; }
+    if (state.gearMode !== "G" || state.launchActive) return;
+    const m = mode();
+    const rpm = gearedRpm(state.curGear);
+    const holdForCorner = Math.abs(state.curvature) > 0.013 && state.speedMps > 12;
+    const kickdown = state.throttle > 0.85;
+    const upRpm = state.throttle > 0.6 ? m.upRpm : (m.downRpm + 1400 + state.throttle * 1200);
+    const downRpm = m.downRpm + (kickdown ? 700 : 0);
+    if (state.manualHold > 0) return;          // respect a just-made manual shift
+    if (!holdForCorner && rpm > upRpm && state.curGear < 7) {
+      state.shiftFrom = state.curGear; state.curGear++; state.shiftTimer = SPEC.shiftTimeS; audio.clunk(240);
+    } else if (rpm < downRpm && state.curGear > 1) {
+      state.shiftFrom = state.curGear; state.curGear--; state.shiftTimer = SPEC.shiftTimeS; audio.blip(0.7);
+    } else if (kickdown && rpm < 3400 && state.curGear > 2) {
+      state.shiftFrom = state.curGear; state.curGear--; state.shiftTimer = SPEC.shiftTimeS; audio.blip(0.8);
+    }
+  }
+
+  /* --- active aerodynamics: real drag/downforce, used by the physics --- */
+  function updateAero(dt) {
+    const spd = Math.abs(state.speedMps);
+    let target;
+    if (state.aeroAuto) {
+      const speedComp = clamp((spd - 14) / 60, 0, 1);
+      const brakeComp = state.brake * 0.9;                 // flaps rise as an airbrake
+      const corner = clamp(Math.abs(state.lateralG) / 1.4, 0, 1) * 0.6;
+      target = clamp(Math.max(speedComp, brakeComp, corner), 0, 1);
+    } else {
+      target = clamp(state.wingManual, 0, 1);
+    }
+    state.aeroDeploy = approach(state.aeroDeploy, target, 0.004, dt);
+    state.frontFlap = state.aeroDeploy * (state.aeroAuto ? 1 : 0.8);
+    state.downforceN = 0.5 * SPEC.airDensity * SPEC.aeroClA * SPEC.frontalAreaM2 * spd * spd * state.aeroDeploy;
+  }
+
+  function tractionCapN() {
+    const grip = SPEC.tractionCoeff * (SPEC.massKg * 9.81 + state.downforceN * 0.9);
+    return grip;
+  }
+
+  /* --- world geometry --- */
+  function buildCornersForRoute() {
+    const env = state.route.env;
+    const corners = [];
+    const total = state.route.active ? state.route.totalM : 4000;
+    let d = 140, seed = (env.length * 131 + total) % 997;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const spacing = env === "highway" ? 700 : env === "ring" ? 1400 : env === "coast" ? 300 : env === "mountain" ? 170 : 230;
+    const sharp = env === "ring" ? 0.0016 : env === "highway" ? 0.0028 : env === "mountain" ? 0.012 : env === "coast" ? 0.007 : 0.0075;
+    while (d < total + 600) {
+      const dir = rnd() > 0.5 ? 1 : -1;
+      corners.push({ at: d, amp: dir * (sharp * (0.55 + rnd() * 0.8)), w: 50 + rnd() * 70 });
+      d += spacing * (0.7 + rnd() * 0.7);
+    }
+    state.corners = corners;
+  }
+  function curvatureAt(d) {
+    let k = 0.0008 * Math.sin(d / 300) + 0.0005 * Math.sin(d / 110 + 1.3);
+    for (const c of state.corners) { const x = (d - c.at) / c.w; if (x > -6 && x < 6) k += c.amp * Math.exp(-x * x); }
+    return k;
+  }
+  function seedWorld() {
+    state.traffic = []; state.scenery = []; state.roadside = [];
+    const env = state.route.env;
+    const trafficCount = env === "highway" ? 16 : env === "ring" ? 6 : 10;
+    for (let i = 0; i < trafficCount; i++) state.traffic.push({ lane: [-1, 0, 1][i % 3], z: 90 + i * 150 + Math.random() * 120, speed: (16 + Math.random() * 18), hue: 8 + Math.random() * 40, oncoming: env === "mountain" || env === "coast" ? i % 3 === 0 : i % 5 === 0 });
+    for (let i = 0; i < 80; i++) state.scenery.push({ side: i % 2 === 0 ? -1 : 1, z: i * 42 + Math.random() * 38, width: 30 + Math.random() * 46, height: env === "mountain" ? 120 + Math.random() * 320 : 60 + Math.random() * 180, lit: Math.random() > 0.4, hue: 20 + Math.random() * 60 });
+    for (let i = 0; i < 60; i++) state.roadside.push({ side: i % 2 === 0 ? -1 : 1, z: i * 24 + Math.random() * 14, kind: Math.random() });
+  }
+
+  /* --- cruise / test-driver targets --- */
+  function targetSpeedMps() {
+    let limit;
+    if (state.pitLimiter) return 60 * KMH;
+    if (state.adaptiveCruise && !state.testDriver) limit = clamp(state.cruiseSetKmh, 10, 350) * KMH;
+    else if (state.route.active) limit = (CIRCUITS[state.route.name]?.limitKmh || 130) * KMH;
+    else limit = 110 * KMH;
+    const cruiseOnly = state.adaptiveCruise && !state.testDriver;
+    const k = Math.max(Math.abs(curvatureAt(state.distanceM + 25)), Math.abs(curvatureAt(state.distanceM + 60)));
+    // test driver corners near the limit of the tyres; cruise stays gentle
+    const latLimit = cruiseOnly ? 0.5 : 1.5;
+    const cornerCap = (k > 0.0006) ? Math.sqrt((latLimit * 9.81) / k) : Infinity;
+    const lead = nearestLeadVehicle();
+    let trafficCap = Infinity;
+    if (lead) { const safe = followDist(); if (lead.gapM < safe) trafficCap = Math.max(0, lead.vMps + (lead.gapM - safe) * 0.6); }
+    let arriveCap = Infinity;
+    if (state.route.active && !isLoop()) { const rem = state.route.remainingM; if (rem < 160) arriveCap = clamp((rem - 4) / 160, 0, 1) * 16; }
+    return Math.max(0, Math.min(limit, cornerCap, trafficCap, arriveCap));
+  }
+  function isLoop() { return state.route.env === "track" || state.route.env === "ring"; }
+  function followDist() { return clamp(Math.abs(state.speedMps) * 1.4, 20, 70); }
+  function nearestLeadVehicle() { let best = null; for (const car of state.traffic) { if (car.oncoming) continue; if (Math.abs(car.lane * 3 - state.laneOffset) > 2.0) continue; if (car.z > 2 && (!best || car.z < best.gapM)) best = { gapM: car.z, vMps: car.speed }; } return best; }
+  function laneScan() { const r = { "-1": { gap: Infinity, v: 99 }, "0": { gap: Infinity, v: 99 }, "1": { gap: Infinity, v: 99 } }; for (const car of state.traffic) { if (car.oncoming) continue; const e = r[car.lane]; if (car.z > 1 && car.z < e.gap) { e.gap = car.z; e.v = car.speed; } } return r; }
+  function chooseLaneOffset() { const lanes = laneScan(); const cur = clamp(Math.round(state.laneOffset / 3), -1, 1); const follow = followDist(); const spd = Math.abs(state.speedMps); const blocked = lanes[cur].gap < follow && lanes[cur].v < spd - 1.5; if (!blocked) { if (cur !== 0 && lanes["0"].gap > follow + 10) return 0; return cur * 3; } let best = cur, bestGap = lanes[cur].gap + 12; for (let l = -1; l <= 1; l++) { if (Math.abs(l - cur) > 1) continue; if (lanes[String(l)].gap > bestGap) { best = l; bestGap = lanes[String(l)].gap; } } return best * 3; }
+
+  const STEERING = { wheelbase: 2.795, frontTrack: 1.66, maxAngle: 0.58 };
+  function steerFactorOf(speedAbs) { return clamp(1.08 - speedAbs * 0.018, 0.30, 1); }
+  function steerForYaw(desiredYaw, v) { const vAbs = Math.max(2.2, Math.abs(v)); const ang = Math.atan((desiredYaw * STEERING.wheelbase) / vAbs); return clamp(ang / (STEERING.maxAngle * steerFactorOf(Math.abs(v))), -1, 1); }
+  function pathSteer(gain, targetOffset) { const look = clamp(Math.abs(state.speedMps) * 0.8, 10, 30); const kAhead = curvatureAt(state.distanceM + look); const tgt = (targetOffset == null) ? 0 : targetOffset; const lateralErr = tgt - state.laneOffset; const phiWanted = clamp(lateralErr * 0.05, -0.5, 0.5); const ffYaw = kAhead * state.speedMps; const corrYaw = (phiWanted - state.headingRel) * 2.4 * (gain || 1); state.blinker = Math.abs(lateralErr) > 0.7 ? Math.sign(lateralErr) : (Math.abs(kAhead) > 0.02 ? Math.sign(kAhead) : 0); return steerForYaw(ffYaw + corrYaw, state.speedMps); }
+  function autopilotControls() { const target = targetSpeedMps(); const err = target - state.speedMps; let demand = clamp(err * 0.5, -1, 1); if (Math.abs(err) < 0.5) demand *= 0.7; let throttle = demand > 0 ? clamp(demand, 0, 1) : 0; let brake = demand < 0 ? clamp(-demand * 0.85, 0, 0.9) : 0; if (brake < 0.05) brake = 0; return { throttle, brake, steerTarget: pathSteer(1, chooseLaneOffset()) }; }
+
+  function updateInputs(dt) {
+    const keyThrottle = (state.keys.KeyW || state.keys.ArrowUp) ? 1 : 0;
+    const keyBrake = (state.keys.Space || state.keys.KeyS || state.keys.ArrowDown) ? 1 : 0;
+    const ownerThrottle = Math.max(keyThrottle, state.padThrottle || 0);
+    const ownerBrake = Math.max(keyBrake, state.padBrake || 0);
+    const steerInput = ((state.keys.KeyD || state.keys.ArrowRight) ? 1 : 0) - ((state.keys.KeyA || state.keys.ArrowLeft) ? 1 : 0);
+    const cruiseActive = state.adaptiveCruise && state.gearMode === "G" && !state.testDriver;
+
+    let throttleTarget, brakeTarget, steerTarget;
+    if (state.testDriver) {
+      const a = autopilotControls();
+      throttleTarget = ownerThrottle > 0 ? ownerThrottle : a.throttle;
+      brakeTarget = ownerBrake > 0 ? ownerBrake : a.brake;
+      steerTarget = steerInput !== 0 ? steerInput : a.steerTarget;
+    } else if (cruiseActive) {
+      const a = autopilotControls();
+      throttleTarget = ownerThrottle > 0 ? ownerThrottle : a.throttle;
+      brakeTarget = ownerBrake > 0 ? ownerBrake : a.brake;
+      steerTarget = steerInput !== 0 ? steerInput : pathSteer(0.7, chooseLaneOffset());
+    } else {
+      throttleTarget = ownerThrottle; brakeTarget = ownerBrake; steerTarget = steerInput;
+    }
+    if (steerInput !== 0) state.blinker = Math.sign(steerInput);
+    else if (!(state.testDriver || cruiseActive)) state.blinker = 0;
+
+    // launch control overrides longitudinal: brake + full throttle when armed and stopped
+    if (state.launchArmed && state.gearMode === "G" && Math.abs(state.speedMps) < 0.4 && (ownerThrottle > 0.8 || throttleTarget > 0.8)) {
+      state.launchActive = true;
+    }
+    if (state.launchActive) {
+      throttleTarget = 1; brakeTarget = 0;
+      if (Math.abs(state.speedMps) > 33 || ownerThrottle < 0.2) { state.launchActive = false; state.launchArmed = false; app.setActiveSafe("launchBtn", false); }
+    }
+
+    if (state.launchActive) {           // launch control commands full throttle instantly
+      state.throttle = 1; state.brake = 0;
+    } else {
+      const tRate = mode().throttleRate;
+      state.throttle = approach(state.throttle, throttleTarget, tRate, dt);
+      state.brake = approach(state.brake, brakeTarget, 0.0014, dt);
+    }
+    state.steer = approach(state.steer, clamp(steerTarget, -1, 1), 0.0009, dt);
+  }
+
+  /* --- main integration --- */
+  function updatePhysics(dt) {
+    updateInputs(dt);
+    updateTransmission(dt);
+    updateAero(dt);
+
+    const speedAbs = Math.abs(state.speedMps);
+    let driven = false, ratio = 0, direction = 1;
+    if (state.gearMode === "G") { driven = true; ratio = SPEC.gearRatios[state.curGear - 1]; }
+    else if (state.gearMode === "R") { driven = true; ratio = SPEC.reverseRatio; direction = -1; }
+
+    const wheelRps = speedAbs / (2 * Math.PI * SPEC.wheelRadiusM);
+    // launch / clutch: hold revs up off the line, then blend into the geared rpm
+    let rawRpm;
+    if (driven) {
+      const geared = wheelRps * ratio * SPEC.finalDrive * 60;
+      if (state.launchActive) rawRpm = Math.max(geared, SPEC.launchRpm * clamp(1 - speedAbs / 18, 0, 1) + geared * clamp(speedAbs / 18, 0, 1));
+      else if (speedAbs < 9 && state.throttle > 0.05) rawRpm = Math.max(geared, SPEC.idleRpm + state.throttle * 2600 * clamp(1 - speedAbs / 9, 0, 1));
+      else rawRpm = geared;
+    } else {
+      rawRpm = state.ignition ? SPEC.idleRpm + state.throttle * 2400 : 0;
+    }
+    state.rpm = approach(state.rpm, clamp(rawRpm, state.ignition ? SPEC.idleRpm : 0, SPEC.redlineRpm), 0.0005, dt);
+
+    // turbo boost lag/spool (cosmetic + audio + tiny torque shaping)
+    const boostTarget = state.ignition ? clamp(state.throttle * (0.5 + clamp(state.rpm / 4200, 0, 1)) * 1.35, 0, 1.35) : 0;
+    state.boostBar = approach(state.boostBar, boostTarget, state.antiLag ? 0.002 : 0.02, dt);
+
+    const shiftCut = state.shiftTimer > 0 ? 0.12 : 1;
+    const canMove = driven && state.ignition && !anyDoorOpen();
+    const harnessLimiter = state.harness ? 1 : 0.32;
+    const boostFactor = 0.78 + 0.22 * clamp(state.boostBar / 1.2, 0, 1);   // torque follows boost
+    const torqueAvail = engineTorque(state.rpm) * boostFactor;
+    state.torqueNm = canMove ? engineTorque(state.rpm) * state.throttle * shiftCut : 0;  // display = crank torque
+
+    const rawForce = torqueAvail * state.throttle * harnessLimiter * shiftCut * ratio * SPEC.finalDrive * SPEC.drivelineEff / SPEC.wheelRadiusM;
+    const cap = tractionCapN();
+    // ESC/TC cut wheelspin; with TC off you can exceed grip but lose efficiency
+    let usable;
+    if (state.tractionControl || state.esc) usable = Math.min(rawForce, cap * mode().tc);
+    else usable = rawForce > cap ? cap * 0.82 + (rawForce - cap) * 0.04 : rawForce;
+    const engineForce = usable * direction;
+
+    const cdA = SPEC.dragCd * SPEC.frontalAreaM2 * (1 + state.aeroDeploy * SPEC.aeroDragAdd);
+    const drag = 0.5 * SPEC.airDensity * cdA * state.speedMps * speedAbs;
+    const roll = speedAbs > 0.05 ? SPEC.rollingResistance * SPEC.massKg * 9.81 * Math.sign(state.speedMps) : 0;
+    const brakeGrip = 1 + (state.downforceN / (SPEC.massKg * 9.81)) * 0.6;   // aero helps the carbon-ceramics
+    const brakeForce = state.brake * SPEC.brakeMaxMps2 * SPEC.massKg * brakeGrip * Math.sign(state.speedMps || direction);
+
+    let total = engineForce - drag - roll - brakeForce;
+    if (state.gearMode === "N" && state.speedMps !== 0) total -= Math.sign(state.speedMps) * SPEC.rollingResistance * SPEC.massKg * 9.81 * 0.5;
+
+    let accel = total / (SPEC.massKg * SPEC.rotInertia);
+    if (state.speedMps >= SPEC.topSpeedMps && accel > 0) { accel = 0; state.speedMps = SPEC.topSpeedMps; }  // 350 km/h governor
+
+    state.speedMps += accel * dt;
+    if (Math.abs(state.speedMps) < 0.05 && state.throttle < 0.02) state.speedMps = 0;
+    if (state.gearMode !== "R" && state.speedMps < 0) state.speedMps = 0;
+    if (!driven && state.speedMps > 0) state.speedMps = Math.max(0, state.speedMps - dt * 0.7);
+
+    // steering & heading (bicycle model)
+    state.curvature = curvatureAt(state.distanceM);
+    const v = state.speedMps;
+    const steerAngle = state.steer * STEERING.maxAngle * steerFactorOf(speedAbs);
+    const yawRate = (v / STEERING.wheelbase) * Math.tan(steerAngle);
+    const k0 = state.curvature;
+    const denom = clamp(1 - state.laneOffset * k0, 0.4, 1.6);
+    const dsdt = v * Math.cos(state.headingRel) / denom;
+    const dndt = v * Math.sin(state.headingRel);
+    state.headingRel += (yawRate - k0 * dsdt) * dt;
+    if (state.headingRel > Math.PI) state.headingRel -= 2 * Math.PI; else if (state.headingRel < -Math.PI) state.headingRel += 2 * Math.PI;
+    state.laneOffset = clamp(state.laneOffset + dndt * dt, -60, 60);
+    state.distanceM += dsdt * dt;
+    state.lateralG = (v * yawRate) / 9.81;
+    state.bodyRoll = approach(state.bodyRoll, clamp(state.lateralG * (state.driveMode === "race" ? 4 : 8), -8, 8), 0.002, dt);
+    state.wheelRotation = (state.wheelRotation + v * dt / SPEC.wheelRadiusM * 57.2958) % 360;
+
+    // lap timing & route progress
+    updateLap(dsdt, dt);
+
+    // ride quality: road texture vs cabin; firmer mode = more comes through
+    const joint = Math.max(0, Math.sin(state.distanceM * 0.10)) ** 16 * 0.30;
+    const coarse = Math.sin(state.distanceM * 0.7) * 0.02 + Math.sin(state.distanceM * 2.3) * 0.012;
+    state.roadInputG = Math.abs(coarse) + joint;
+    const damp = mode().damp;
+    state.cabinHeaveG = approach(state.cabinHeaveG, state.roadInputG * (0.2 + damp * 0.5), 0.002, dt);
+
+    // a hypercar shakes — scaled by mode firmness, speed texture, lateral load, shifts
+    let shakeAmp = state.cabinHeaveG * 14 * damp + Math.abs(state.lateralG) * 5 + (state.shiftTimer > 0 ? 1.0 : 0);
+    if (state.gearMode === "G" && speedAbs < 1 && state.rpm > 1000) shakeAmp += 0.5 * damp; // idle thrum
+    state.shake.x = (Math.random() - 0.5) * shakeAmp;
+    state.shake.y = (Math.random() - 0.5) * shakeAmp * 1.3;
+    state.shake.rot = (Math.random() - 0.5) * shakeAmp * 0.0006 + state.bodyRoll * 0.0009;
+    if (shakeAmp > 3 && navigator.vibrate && state.time - (state._lastBuzz || 0) > 0.4) { navigator.vibrate(16); state._lastBuzz = state.time; }
+
+    // temperatures drift with load
+    const load = state.throttle;
+    state.oilTempC = approach(state.oilTempC, 88 + load * 32 + speedAbs * 0.05, 0.06, dt);
+    state.waterTempC = approach(state.waterTempC, 86 + load * 18 - (state.coolingFans ? 4 : 0), 0.05, dt);
+    state.egtC = approach(state.egtC, 300 + load * 620 + (state.antiLag ? 180 : 0), 0.05, dt);
+    state.brakeTempC = approach(state.brakeTempC, 110 + state.brake * 480 + speedAbs * 0.6, 0.05, dt);
+
+    if (state.blinker !== 0 || state.hazards) { state.blinkPhase += dt; if (state.blinkPhase > 0.42) { state.blinkPhase = 0; state.blinkOn = !state.blinkOn; if (state.blinkOn) audio.click(1500); } }
+    else { state.blinkOn = false; state.blinkPhase = 0; }
+    if (state.dayPhase !== 0.9) state.dayPhase = (state.dayPhase + dt * 0.004) % 1;
+    if (state.toastTimer > 0) { state.toastTimer -= dt; if (state.toastTimer <= 0) el.toast.classList.remove("show"); }
+  }
+
+  function updateLap(dsdt, dt) {
+    if (!state.route.active) { if (Math.abs(state.speedMps) > 1) state.lap.curMs += dt * 1000; return; }
+    state.route.remainingM = Math.max(0, state.route.remainingM - dsdt * dt);
+    state.lap.curMs += dt * 1000;
+    if (state.route.remainingM <= 1.5) {
+      const lapMs = state.lap.curMs;
+      if (isLoop()) {
+        state.lap.lastMs = lapMs;
+        if (!state.lap.bestMs || lapMs < state.lap.bestMs) state.lap.bestMs = lapMs;
+        state.lap.curMs = 0;
+        state.route.remainingM = state.route.totalM;   // next lap
+        showToast(`Lap complete — ${fmtLap(lapMs)}${state.lap.bestMs === lapMs ? " · new best" : ""}.`, "Co-Pilot");
+        audio.chime([659, 988, 1319]);
+      } else if (!state.route.arrived && Math.abs(state.speedMps) < 1.2) {
+        onArrival();
+      }
+    }
+  }
+  function fmtLap(ms) { const s = ms / 1000; const m = Math.floor(s / 60); const r = (s - m * 60); return m > 0 ? `${m}:${r.toFixed(2).padStart(5, "0")}` : `${r.toFixed(2)}s`; }
+  function onArrival() {
+    state.route.arrived = true; state.route.active = false; const name = state.route.name; state.adaptiveCruise = false;
+    showToast(`Arrived at ${name}. ${fmtLap(state.lap.curMs)} on the clock.`, state.testDriver ? "Test Driver" : "Co-Pilot");
+    audio.chime([784, 1047, 1319]);
+  }
+
+  Object.assign(app, {
+    engineTorque, gearedRpm, mode, manualShift, updateTransmission, updateAero, tractionCapN,
+    buildCornersForRoute, curvatureAt, seedWorld, isLoop, targetSpeedMps, updatePhysics, onArrival, fmtLap, STEERING
+  });
+}
+
+/* ===== render: the driving world ===== */
+{
+  const app = window.PaganiApp;
+  const { state, canvas, ctx, clamp, lerp } = app;
+  const curvatureAt = (...a) => app.curvatureAt(...a);
+
+  function resizeCanvas() {
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(innerWidth * dpr); canvas.height = Math.floor(innerHeight * dpr);
+    canvas.style.width = innerWidth + "px"; canvas.style.height = innerHeight + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", resizeCanvas);
+
+  const FOCAL = 380, CAM_H = 1.15; let horizonY = 0;     // low slung — hypercar eye height
+  function envColors() {
+    const env = state.route.active ? state.route.env : "track";
+    const day = state.dayPhase; const night = day > 0.82;
+    const palettes = {
+      track:    { road: "#1f2228", grass: "#22301c", far: "#2a3640", kerb: true },
+      mountain: { road: "#23252b", grass: "#1d2a18", far: "#37404a", kerb: false },
+      ring:     { road: "#202329", grass: "#262a22", far: "#2b333d", kerb: false },
+      highway:  { road: "#1f2227", grass: "#222a1c", far: "#2a3640", kerb: false },
+      coast:    { road: "#212630", grass: "#1c3a3a", far: "#244a55", kerb: false }
+    };
+    return { env, night, ...(palettes[env] || palettes.track) };
+  }
+
+  const ROAD = { AHEAD: 240, BEHIND: 96, STEP: 4, samples: [] };
+  function rebuildRoadTable() {
+    const s0 = state.distanceM, STEP = ROAD.STEP, arr = []; let psi = 0, X = 0, Z = 0; const back = [];
+    for (let d = -STEP; d >= -ROAD.BEHIND; d -= STEP) { const k = curvatureAt(s0 + d + STEP / 2); psi -= k * STEP; X -= Math.sin(psi) * STEP; Z -= Math.cos(psi) * STEP; back.push({ off: d, X, Z, psi }); }
+    for (let i = back.length - 1; i >= 0; i--) arr.push(back[i]);
+    arr.push({ off: 0, X: 0, Z: 0, psi: 0 }); psi = 0; X = 0; Z = 0;
+    for (let d = STEP; d <= ROAD.AHEAD; d += STEP) { const k = curvatureAt(s0 + d - STEP / 2); psi += k * STEP; X += Math.sin(psi) * STEP; Z += Math.cos(psi) * STEP; arr.push({ off: d, X, Z, psi }); }
+    ROAD.samples = arr;
+  }
+  function centerlineAt(off) {
+    const t = ROAD.samples; if (!t.length) return { X: 0, Z: Math.max(0.1, off), psi: 0 };
+    const first = t[0], last = t[t.length - 1];
+    if (off <= first.off) { const e = off - first.off; return { X: first.X + Math.sin(first.psi) * e, Z: first.Z + Math.cos(first.psi) * e, psi: first.psi }; }
+    if (off >= last.off) { const e = off - last.off; return { X: last.X + Math.sin(last.psi) * e, Z: last.Z + Math.cos(last.psi) * e, psi: last.psi }; }
+    const idx = (off - first.off) / ROAD.STEP, i0 = Math.floor(idx), i1 = Math.min(t.length - 1, i0 + 1), f = idx - i0; const a = t[i0], b = t[i1];
+    return { X: lerp(a.X, b.X, f), Z: lerp(a.Z, b.Z, f), psi: lerp(a.psi, b.psi, f) };
+  }
+  function projectAhead(distAhead, lateralM) { const c = centerlineAt(distAhead); const nx = Math.cos(c.psi), nz = -Math.sin(c.psi); return projectRoad(c.X + (lateralM || 0) * nx, c.Z + (lateralM || 0) * nz); }
+  function projectRoad(Xr, Zr) { const phi = state.headingRel, n0 = state.laneOffset; const dX = Xr - n0, dZ = Zr; const fwd = dX * Math.sin(phi) + dZ * Math.cos(phi); const rgt = dX * Math.cos(phi) - dZ * Math.sin(phi); if (fwd <= 0.12) return { x: innerWidth / 2, y: horizonY, scale: -1, fwd }; const scale = FOCAL / fwd; return { x: innerWidth / 2 + rgt * scale, y: horizonY + CAM_H * scale, scale, fwd }; }
+
+  const HALF_ROAD = 6.5;
+  const ROAD_OFFS = (function () { const o = []; for (let d = -80; d < -6; d += 8) o.push(d); for (let d = -6; d < 6; d += 0.6) o.push(d); for (let d = 6; d < 32; d += 2.4) o.push(d); for (let d = 32; d <= 240; d += 6) o.push(d); return o; })();
+  const NEAR_PLANE = 0.15;
+  function roadCorner(Xr, Zr) { const phi = state.headingRel, n0 = state.laneOffset; const dX = Xr - n0, dZ = Zr; return { rgt: dX * Math.cos(phi) - dZ * Math.sin(phi), fwd: dX * Math.sin(phi) + dZ * Math.cos(phi) }; }
+  function projPoint(p) { const s = FOCAL / p.fwd; return { x: innerWidth / 2 + p.rgt * s, y: horizonY + CAM_H * s }; }
+
+  function drawWorld() {
+    const w = innerWidth, h = innerHeight; horizonY = h * 0.46; const pal = envColors(); rebuildRoadTable();
+    ctx.save();
+    ctx.translate(w / 2 + state.shake.x, h / 2 + state.shake.y); ctx.rotate(state.shake.rot); ctx.translate(-w / 2, -h / 2);
+    drawSky(w, h, pal); drawScenery(w, h, pal); drawRoad(w, h, pal); drawRoadside(w, h, pal); drawTraffic(w, h, pal);
+    drawCabinFrame(w, h, pal);
+    if (pal.night) drawHeadlights(w, h);
+    if (state.dataHud) drawTelemetry(w, h);
+    if (state.hazards && state.blinkOn) { ctx.fillStyle = "rgba(255,120,40,0.10)"; ctx.fillRect(0, horizonY, w, h - horizonY); }
+    ctx.restore();
+  }
+
+  function drawSky(w, h, pal) {
+    const sky = ctx.createLinearGradient(0, 0, 0, horizonY + 40);
+    if (pal.night) { sky.addColorStop(0, "#05101f"); sky.addColorStop(0.6, "#0a1622"); sky.addColorStop(1, "#0d1a22"); }
+    else { const dusk = state.dayPhase > 0.66; sky.addColorStop(0, dusk ? "#39506e" : "#6ea7cf"); sky.addColorStop(0.55, dusk ? "#9c6f5a" : "#a9c4d4"); sky.addColorStop(1, dusk ? "#caa07e" : "#d3dee0"); }
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, horizonY + 40);
+    ctx.fillStyle = pal.night ? "rgba(220,228,240,0.85)" : "rgba(255,244,210,0.9)"; ctx.beginPath(); ctx.arc(w * 0.72, horizonY * 0.4, pal.night ? 16 : 24, 0, Math.PI * 2); ctx.fill();
+    if (pal.night) { ctx.fillStyle = "rgba(255,255,255,0.8)"; for (let i = 0; i < 40; i++) { const sx = (i * 137.5) % w, sy = (i * 53.3) % (horizonY * 0.8); ctx.fillRect(sx, sy, 1.5, 1.5); } }
+  }
+  function drawScenery(w, h, pal) {
+    for (const b of state.scenery) {
+      let z = ((b.z - state.distanceM * 0.5) % 3000 + 3000) % 3000; if (z < 6) continue;
+      const p = projectAhead(z + 30, b.side * (18 + z * 0.05)); const scale = p.scale; if (scale < 0.12 || scale > 6) continue;
+      const bw = b.width * scale * 0.5, bh = b.height * scale * 0.5, x = p.x, y = horizonY - bh;
+      if (pal.env === "coast" && b.side === 1 && b.height > 150) continue;
+      if (pal.env === "mountain") { ctx.fillStyle = pal.night ? "#16210f" : "#27401d"; ctx.beginPath(); ctx.moveTo(x - bw, horizonY); ctx.lineTo(x, y); ctx.lineTo(x + bw, horizonY); ctx.closePath(); ctx.fill(); continue; }
+      ctx.fillStyle = pal.night ? `hsl(${b.hue},18%,${b.lit ? 16 : 11}%)` : `hsl(${b.hue},20%,${b.lit ? 58 : 46}%)`;
+      ctx.fillRect(x - bw / 2, y, bw, bh + 2);
+    }
+  }
+  function drawRoad(w, h, pal) {
+    ctx.fillStyle = pal.grass; ctx.fillRect(0, horizonY, w, h - horizonY);
+    const rg = ctx.createLinearGradient(0, horizonY, 0, h); rg.addColorStop(0, pal.road); rg.addColorStop(1, pal.night ? "#14171c" : "#2a2e34"); ctx.fillStyle = rg;
+    let prevL = null, prevR = null;
+    for (let i = 0; i < ROAD_OFFS.length; i++) { const c = centerlineAt(ROAD_OFFS[i]); const cs = Math.cos(c.psi), sn = Math.sin(c.psi); const L = roadCorner(c.X - HALF_ROAD * cs, c.Z + HALF_ROAD * sn); const R = roadCorner(c.X + HALF_ROAD * cs, c.Z - HALF_ROAD * sn); if (prevL) fillClippedQuad([prevL, prevR, R, L]); prevL = L; prevR = R; }
+    if (pal.kerb) drawKerbs();
+    ctx.strokeStyle = "rgba(236,232,220,0.5)"; drawRoadLine(-HALF_ROAD + 0.3, false, 2); drawRoadLine(HALF_ROAD - 0.3, false, 2);
+    ctx.strokeStyle = "rgba(245,240,225,0.62)"; drawRoadLine(0, true, 2.0);
+  }
+  function drawKerbs() {
+    // red/white circuit kerbs alternating by world distance
+    const draw = (lateral, sign) => {
+      let prev = null;
+      for (let i = 0; i < ROAD_OFFS.length; i++) { const off = ROAD_OFFS[i]; const c = centerlineAt(off); const pc = roadCorner(c.X + lateral * Math.cos(c.psi), c.Z - lateral * Math.sin(c.psi)); if (prev && (prev.fwd >= NEAR_PLANE || pc.fwd >= NEAR_PLANE)) { let a = prev, b = pc; if (a.fwd < NEAR_PLANE) { const t = (NEAR_PLANE - a.fwd) / (b.fwd - a.fwd); a = { rgt: a.rgt + (b.rgt - a.rgt) * t, fwd: NEAR_PLANE }; } else if (b.fwd < NEAR_PLANE) { const t = (NEAR_PLANE - a.fwd) / (b.fwd - a.fwd); b = { rgt: a.rgt + (b.rgt - a.rgt) * t, fwd: NEAR_PLANE }; } const pa = projPoint(a), pb = projPoint(b); const red = (((state.distanceM + off) % 8) + 8) % 8 < 4; ctx.strokeStyle = red ? "rgba(220,70,70,0.85)" : "rgba(240,240,240,0.85)"; ctx.lineWidth = clamp(6 * (FOCAL / Math.max(a.fwd, b.fwd)) * 0.04, 1.5, 12); ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke(); } prev = pc; }
+    };
+    draw(-HALF_ROAD - 0.5, -1); draw(HALF_ROAD + 0.5, 1);
+  }
+  function fillClippedQuad(poly) {
+    const out = [];
+    for (let i = 0; i < poly.length; i++) { const cur = poly[i], nxt = poly[(i + 1) % poly.length]; const curIn = cur.fwd >= NEAR_PLANE, nxtIn = nxt.fwd >= NEAR_PLANE; if (curIn) out.push(cur); if (curIn !== nxtIn) { const t = (NEAR_PLANE - cur.fwd) / (nxt.fwd - cur.fwd); out.push({ rgt: cur.rgt + (nxt.rgt - cur.rgt) * t, fwd: NEAR_PLANE }); } }
+    if (out.length < 3) return; ctx.beginPath(); for (let i = 0; i < out.length; i++) { const p = projPoint(out[i]); if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); } ctx.closePath(); ctx.fill();
+  }
+  function drawRoadLine(lateralM, dashed, width) {
+    let prev = null;
+    for (let i = 0; i < ROAD_OFFS.length; i++) { const off = ROAD_OFFS[i]; const c = centerlineAt(off); const pc = roadCorner(c.X + lateralM * Math.cos(c.psi), c.Z - lateralM * Math.sin(c.psi)); if (prev) { const onDash = !dashed || ((((state.distanceM + ROAD_OFFS[i - 1]) % 12) + 12) % 12) < 6; if (onDash && (prev.fwd >= NEAR_PLANE || pc.fwd >= NEAR_PLANE)) { let a = prev, b = pc; if (a.fwd < NEAR_PLANE) { const t = (NEAR_PLANE - a.fwd) / (b.fwd - a.fwd); a = { rgt: a.rgt + (b.rgt - a.rgt) * t, fwd: NEAR_PLANE }; } else if (b.fwd < NEAR_PLANE) { const t = (NEAR_PLANE - a.fwd) / (b.fwd - a.fwd); b = { rgt: a.rgt + (b.rgt - a.rgt) * t, fwd: NEAR_PLANE }; } const pa = projPoint(a), pb = projPoint(b); ctx.lineWidth = clamp(width * (FOCAL / Math.max(a.fwd, b.fwd)) * 0.5, 1, 14); ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke(); } } prev = pc; }
+  }
+  function drawRoadside(w, h, pal) {
+    for (const r of state.roadside) {
+      let z = ((r.z - state.distanceM) % 240 + 240) % 240; if (z < 7 || z > 220) continue;
+      const lateral = r.side * 9.0; const p = projectAhead(z, lateral); const sc = Math.min(p.scale, 3.0); if (p.scale < 0.18 || p.x < -120 || p.x > w + 120) continue;
+      if (pal.env === "coast" && r.side === 1) continue;
+      if (pal.env === "track" || pal.env === "ring") { // armco guardrail + marshal posts
+        ctx.fillStyle = "rgba(180,186,192,0.8)"; ctx.fillRect(p.x - 1.4 * sc, p.y - 10 * sc, 2.8 * sc, 10 * sc);
+        ctx.fillStyle = "rgba(200,206,212,0.65)"; ctx.fillRect(p.x - 6 * sc, p.y - 9 * sc, 12 * sc, 2.4 * sc);
+      } else if (r.kind > 0.5) { ctx.fillStyle = pal.night ? "#15240f" : "#2c5226"; ctx.beginPath(); ctx.ellipse(p.x, p.y - 16 * sc, 7 * sc, 12 * sc, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#3a2a18"; ctx.fillRect(p.x - 1.3 * sc, p.y - 8 * sc, 2.6 * sc, 8 * sc); }
+      else { ctx.strokeStyle = "rgba(150,155,160,0.7)"; ctx.lineWidth = Math.max(1, 2 * sc); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y - 30 * sc); ctx.stroke(); ctx.fillStyle = pal.night ? "rgba(255,224,150,0.9)" : "rgba(200,205,210,0.8)"; ctx.beginPath(); ctx.arc(p.x, p.y - 30 * sc, 3 * sc, 0, Math.PI * 2); ctx.fill(); }
+    }
+    if (pal.env === "coast") { const seaTop = horizonY; const g = ctx.createLinearGradient(0, seaTop, 0, h); g.addColorStop(0, pal.night ? "#0d2733" : "#2f6f86"); g.addColorStop(1, pal.night ? "#08161d" : "#1c4a5c"); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(w, seaTop); ctx.lineTo(w, h); const p0 = projectAhead(2, 8), p1 = projectAhead(240, 8); ctx.lineTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.closePath(); ctx.fill(); }
+  }
+  function drawTraffic(w, h, pal) {
+    const list = state.traffic.slice().sort((a, b) => b.z - a.z);
+    for (const car of list) {
+      const rel = car.oncoming ? -(Math.abs(state.speedMps) + car.speed) : (car.speed - state.speedMps); car.z += rel * 0.016; if (car.z < 3) car.z += 1600; if (car.z > 1600) car.z -= 1600;
+      const lateral = car.lane * 3.0 + (car.oncoming ? -3.6 : 0); const p = projectAhead(car.z, lateral); if (p.scale < 0.12 || p.scale > 7) continue; const sc = p.scale; const cw = 4.4 * sc, ch = 2.6 * sc;
+      ctx.save(); ctx.translate(p.x, p.y);
+      ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(0, 0, cw * 0.6, ch * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+      const lum = pal.night ? 28 : 50; ctx.fillStyle = `hsl(${car.hue},55%,${lum}%)`; roundRect(ctx, -cw / 2, -ch, cw, ch * 0.78, Math.max(2, 4 * sc)); ctx.fill();
+      ctx.fillStyle = pal.night ? "rgba(120,150,170,0.5)" : "rgba(190,210,225,0.75)"; roundRect(ctx, -cw * 0.3, -ch, cw * 0.6, ch * 0.34, 2 * sc); ctx.fill();
+      if (car.oncoming) { ctx.fillStyle = "rgba(255,250,220,0.7)"; ctx.fillRect(-cw * 0.42, -ch * 0.5, cw * 0.16, ch * 0.16); ctx.fillRect(cw * 0.26, -ch * 0.5, cw * 0.16, ch * 0.16); }
+      else { ctx.fillStyle = "rgba(255,70,70,0.9)"; ctx.fillRect(-cw * 0.44, -ch * 0.55, cw * 0.14, ch * 0.14); ctx.fillRect(cw * 0.3, -ch * 0.55, cw * 0.14, ch * 0.14); }
+      ctx.restore();
+    }
+  }
+
+  /* first-person cockpit frame: low carbon dash, exposed wheel, the BC's central tach */
+  function drawCabinFrame(w, h, pal) {
+    const sway = state.bodyRoll * 1.4;
+    ctx.fillStyle = pal.night ? "#0a0c0f" : "#101216";
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(w * 0.18, 0); ctx.lineTo(w * 0.08, h * 0.62); ctx.lineTo(0, h * 0.66); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(w, 0); ctx.lineTo(w * 0.82, 0); ctx.lineTo(w * 0.92, h * 0.62); ctx.lineTo(w, h * 0.66); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = pal.night ? "#08090c" : "#0d0f12"; ctx.fillRect(0, 0, w, h * 0.05);
+    // carbon dash cowl
+    const dashY = h * 0.66 + sway * 0.2;
+    const dg = ctx.createLinearGradient(0, dashY, 0, h);
+    dg.addColorStop(0, "#15181d"); dg.addColorStop(0.5, "#0c0e12"); dg.addColorStop(1, "#080a0d");
+    ctx.fillStyle = dg; ctx.beginPath(); ctx.moveTo(w * 0.02 + sway, dashY); ctx.lineTo(w * 0.98 + sway, dashY); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
+    // carbon weave hint on the dash
+    ctx.save(); ctx.globalAlpha = 0.10; ctx.strokeStyle = "#9fb0bd"; ctx.lineWidth = 1;
+    for (let x = -20; x < w + 20; x += 10) { ctx.beginPath(); ctx.moveTo(x + sway, dashY); ctx.lineTo(x + 40 + sway, h); ctx.stroke(); }
+    ctx.restore();
+    // central amber tach pod (Pagani puts the rev counter dead centre)
+    drawTachPod(w / 2 + sway, dashY + 12, Math.min(w, h) * 0.085);
+    // exposed three-spoke wheel with milled centre
+    drawWheel(w, h);
+  }
+  function drawTachPod(cx, cy, R) {
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.fillStyle = "rgba(8,10,13,0.92)"; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(180,190,200,0.6)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+    const startA = Math.PI * 0.75, endA = Math.PI * 2.25;
+    for (let i = 0; i <= 63; i++) { const f = i / 63; const a = lerp(startA, endA, f); const rpm = f * app.SPEC.redlineRpm; const on = rpm <= state.rpm; const r1 = R * 0.78, r2 = R * 0.96; ctx.strokeStyle = on ? (rpm > 5600 ? "#ff5b5b" : "#f0a23c") : "rgba(120,130,140,0.3)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1); ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2); ctx.stroke(); }
+    const needA = lerp(startA, endA, clamp(state.rpm / app.SPEC.redlineRpm, 0, 1)); ctx.strokeStyle = "#ffe7c2"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(needA) * R * 0.72, Math.sin(needA) * R * 0.72); ctx.stroke();
+    ctx.fillStyle = "#ffe7c2"; ctx.font = `700 ${Math.round(R * 0.34)}px ui-sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(state.gearMode === "G" ? String(state.curGear) : state.gearMode, 0, R * 0.18);
+    ctx.restore();
+  }
+  function drawWheel(w, h) {
+    const cx = w / 2 + state.shake.x * 0.3, cy = h * 1.2; const R = Math.min(w, h) * 0.33;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(state.steer * 0.9);
+    ctx.lineWidth = R * 0.11; ctx.strokeStyle = "#0e1014"; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = R * 0.04; ctx.strokeStyle = "rgba(120,130,140,0.7)"; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+    // flat-bottom
+    ctx.fillStyle = "#08090c"; ctx.fillRect(-R * 0.5, R * 0.78, R, R * 0.4);
+    ctx.strokeStyle = "#15181d"; ctx.lineWidth = R * 0.09; [-1, 1].forEach(s => { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(s * R * 0.9, R * 0.16); ctx.stroke(); }); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -R * 0.9); ctx.stroke();
+    // milled aluminium centre
+    const mg = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.22); mg.addColorStop(0, "#e7ecf1"); mg.addColorStop(1, "#5a626b"); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#0a0c10"; ctx.font = `700 ${Math.round(R * 0.15)}px "Trajan Pro", Georgia, serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("BC", 0, 0);
+    ctx.restore();
+  }
+  function drawHeadlights(w, h) { const g = ctx.createRadialGradient(w / 2, horizonY, 20, w / 2, h, h * 0.9); g.addColorStop(0, "rgba(220,235,255,0.14)"); g.addColorStop(0.4, "rgba(200,220,245,0.06)"); g.addColorStop(1, "rgba(0,0,0,0)"); ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.fillStyle = g; ctx.fillRect(0, horizonY - 30, w, h); ctx.restore(); }
+  function drawTelemetry(w, h) {
+    ctx.save();
+    ctx.fillStyle = "rgba(130,241,234,0.85)"; ctx.font = "11px ui-monospace, monospace"; ctx.textAlign = "left";
+    const x = w * 0.5 - 70, y = h * 0.1;
+    ctx.fillText(`${Math.round(app.kmh(state.speedMps))} km/h   ${Math.round(state.rpm)} rpm`, x, y);
+    ctx.fillText(`G ${state.lateralG.toFixed(2)}  DF ${Math.round(state.downforceN / 9.81)} kg  ${app.SPEC.gearRatios && state.gearMode === "G" ? "gear " + state.curGear : state.gearMode}`, x, y + 14);
+    if (state.lap.curMs > 0) ctx.fillText(`lap ${app.fmtLap(state.lap.curMs)}${state.lap.bestMs ? "  best " + app.fmtLap(state.lap.bestMs) : ""}`, x, y + 28);
+    ctx.restore();
+  }
+  function roundRect(c, x, y, ww, hh, r) { r = Math.min(r, ww / 2, hh / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + ww, y, x + ww, y + hh, r); c.arcTo(x + ww, y + hh, x, y + hh, r); c.arcTo(x, y + hh, x, y, r); c.arcTo(x, y, x + ww, y, r); c.closePath(); }
+
+  /* circuit map */
+  let mapCtx = null;
+  function drawMap() {
+    if (!app.el.mapCanvas) return; if (!mapCtx) mapCtx = app.el.mapCanvas.getContext("2d");
+    const c = app.el.mapCanvas, dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); const rw = c.clientWidth || 300, rh = c.clientHeight || 380;
+    if (c.width !== rw * dpr) { c.width = rw * dpr; c.height = rh * dpr; mapCtx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    const g = mapCtx; g.clearRect(0, 0, rw, rh); g.fillStyle = "#070d12"; g.fillRect(0, 0, rw, rh);
+    g.strokeStyle = "rgba(255,255,255,0.05)"; g.lineWidth = 1; for (let x = 0; x < rw; x += 34) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, rh); g.stroke(); } for (let y = 0; y < rh; y += 34) { g.beginPath(); g.moveTo(0, y); g.lineTo(rw, y); g.stroke(); }
+    const total = state.route.active ? state.route.totalM : 4000; const pts = []; const N = 80; let heading = 0, x = rw * 0.22, y = rh * 0.82;
+    for (let i = 0; i <= N; i++) { const d = (i / N) * total; const k = curvatureAt(d); heading += k * (total / N) * 0.55; x += Math.cos(-Math.PI / 2 + heading) * (rw * 0.58 / N); y += Math.sin(-Math.PI / 2 + heading) * (rh * 0.66 / N); pts.push({ x, y }); }
+    g.strokeStyle = state.route.active ? "rgba(130,241,234,0.9)" : "rgba(120,130,140,0.5)"; g.lineWidth = 4; g.lineCap = "round"; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.stroke();
+    if (state.route.active) { const dp = pts[pts.length - 1]; g.fillStyle = "#5fe08c"; g.beginPath(); g.arc(dp.x, dp.y, 6, 0, Math.PI * 2); g.fill(); g.fillStyle = "rgba(238,241,244,0.9)"; g.font = "11px sans-serif"; g.textAlign = "center"; g.fillText(state.route.name, dp.x, dp.y - 12); }
+    const prog = state.route.active ? clamp(1 - state.route.remainingM / Math.max(1, total), 0, 1) : (state.distanceM % 4000) / 4000; const idx = clamp(Math.floor(prog * N), 0, N); const cp = pts[idx];
+    g.fillStyle = "#eef1f4"; g.strokeStyle = "#34c6bf"; g.lineWidth = 3; g.beginPath(); g.arc(cp.x, cp.y, 7, 0, Math.PI * 2); g.fill(); g.stroke(); g.fillStyle = "rgba(52,198,191,0.25)"; g.beginPath(); g.arc(cp.x, cp.y, 14, 0, Math.PI * 2); g.fill();
+  }
+
+  /* Pagani cockpit SVG */
+  function injectArt() {
+    app.el.cabinArt.innerHTML = `
+    <svg viewBox="0 0 1000 360" role="img" aria-label="Pagani Huayra BC cockpit">
+      <defs>
+        <linearGradient id="carbonG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a1d22"/><stop offset="1" stop-color="#08090c"/></linearGradient>
+        <linearGradient id="aluG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef2f6"/><stop offset="0.5" stop-color="#aab2bb"/><stop offset="1" stop-color="#5c636c"/></linearGradient>
+        <linearGradient id="leatherG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b3803f"/><stop offset="1" stop-color="#6f421f"/></linearGradient>
+        <radialGradient id="tachG" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#f0a23c"/><stop offset="1" stop-color="#10141a"/></radialGradient>
+      </defs>
+      <rect x="0" y="0" width="1000" height="360" fill="url(#carbonG)"/>
+      <g opacity="0.16" stroke="#9fb0bd" stroke-width="1">${weave()}</g>
+      <!-- aluminium binnacle with four dials, amber tach centre -->
+      <rect x="120" y="40" width="760" height="120" rx="16" fill="#0c0f14" stroke="url(#aluG)" stroke-width="2"/>
+      <circle cx="500" cy="100" r="46" fill="url(#tachG)" stroke="url(#aluG)" stroke-width="3" id="tachArt"/>
+      <text x="500" y="106" text-anchor="middle" font-size="22" font-weight="700" fill="#0a0c10" id="tachGearArt">N</text>
+      <circle cx="360" cy="100" r="30" fill="#0a0e14" stroke="url(#aluG)" stroke-width="2"/>
+      <circle cx="640" cy="100" r="30" fill="#0a0e14" stroke="url(#aluG)" stroke-width="2"/>
+      <circle cx="250" cy="104" r="22" fill="#0a0e14" stroke="url(#aluG)"/>
+      <circle cx="750" cy="104" r="22" fill="#0a0e14" stroke="url(#aluG)"/>
+      <text x="360" y="148" text-anchor="middle" font-size="9" fill="#9aa2ab">BOOST</text>
+      <text x="640" y="148" text-anchor="middle" font-size="9" fill="#9aa2ab">KM/H</text>
+      <!-- exposed milled gear lever (Pagani signature) -->
+      <g id="shifterArt" transform="translate(500,300)">
+        <ellipse cx="0" cy="44" rx="70" ry="14" fill="#0c0f14" stroke="url(#aluG)"/>
+        <g stroke="url(#aluG)" stroke-width="3" fill="none">
+          <path d="M-40,40 L-40,4 M40,40 L40,4 M-40,22 L40,22 M-22,40 L-22,8 M22,40 L22,8 M0,40 L0,2"/>
+        </g>
+        <line x1="0" y1="20" x2="0" y2="-30" stroke="url(#aluG)" stroke-width="6" id="leverArt"/>
+        <circle cx="0" cy="-34" r="11" fill="url(#aluG)"/>
+      </g>
+      <!-- start switch (jewelled toggle) -->
+      <g transform="translate(700,250)"><rect x="-26" y="-18" width="52" height="36" rx="6" fill="#0c0f14" stroke="url(#aluG)"/><circle cx="0" cy="0" r="11" fill="#7a1f1f" stroke="#ff6060" id="startArt"/><text x="0" y="3" text-anchor="middle" font-size="7" fill="#ffd7d7">START</text></g>
+      <!-- leather bolsters -->
+      <g transform="translate(150,250)"><rect x="-44" y="-30" width="88" height="120" rx="20" fill="url(#leatherG)" stroke="rgba(0,0,0,0.3)"/><path d="M-30,-18 L30,-18 M-30,6 L30,6 M-30,30 L30,30" stroke="rgba(0,0,0,0.25)"/></g>
+      <g transform="translate(850,250)"><rect x="-44" y="-30" width="88" height="120" rx="20" fill="url(#leatherG)" stroke="rgba(0,0,0,0.3)"/><path d="M-30,-18 L30,-18 M-30,6 L30,6 M-30,30 L30,30" stroke="rgba(0,0,0,0.25)"/></g>
+      <!-- exposed three-spoke wheel -->
+      <g id="cabinWheelG" transform="translate(500,300)">
+        <circle r="56" fill="none" stroke="#0e1014" stroke-width="15"/>
+        <circle r="56" fill="none" stroke="#5c636c" stroke-width="3"/>
+        <line x1="0" y1="0" x2="0" y2="-52" stroke="#15181d" stroke-width="8"/>
+        <line x1="0" y1="0" x2="-48" y2="14" stroke="#15181d" stroke-width="8"/>
+        <line x1="0" y1="0" x2="48" y2="14" stroke="#15181d" stroke-width="8"/>
+        <circle r="14" fill="url(#aluG)"/><text x="0" y="4" text-anchor="middle" font-family="Georgia" font-size="11" fill="#0a0c10">BC</text>
+      </g>
+    </svg>`;
+  }
+  function weave() { let s = ""; for (let x = -10; x < 1010; x += 14) s += `<line x1="${x}" y1="0" x2="${x + 60}" y2="360"/>`; for (let x = 0; x < 1010; x += 14) s += `<line x1="${x}" y1="0" x2="${x - 60}" y2="360"/>`; return s; }
+
+  Object.assign(app, { resizeCanvas, drawWorld, drawMap, injectArt, roundRect });
+}
+
+/* ===== UI actions ===== */
+{
+  const app = window.PaganiApp;
+  const { state, el, CIRCUITS, SPEC, clamp, kmh, audio } = app;
+  const showToast = app.showToast;
+
+  function setActive(id, on) { const n = document.getElementById(id); if (n) n.classList.toggle("active", !!on); }
+  function setActiveSafe(id, on) { setActive(id, on); }
+  function anyDoorOpen() { return state.doors.driver || state.doors.passenger; }
+
+  function setView(view) { document.body.className = `view-${view}`; document.querySelectorAll("[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === view)); }
+
+  function setGear(mode, gear) {
+    if (mode === "R" && Math.abs(state.speedMps) > 0.7) { showToast("Reverse engages once you're stopped."); return; }
+    if ((mode === "G" || mode === "R") && anyDoorOpen()) { closeAllDoors(true); showToast("Gullwings drawn shut to drive.", "Huayra BC"); }
+    if (mode === "G") { state.gearMode = "G"; state.curGear = clamp(gear || state.curGear || 1, 1, 7); }
+    else { state.gearMode = mode; if (mode === "N") { state.launchArmed = false; state.launchActive = false; } if (mode === "R") state.curGear = 1; }
+    if (mode === "G" && !state.harness) latchHarness(true);
+    if (mode !== "G") state.adaptiveCruise = false;
+    audio.clunk(200); updateGearButtons();
+  }
+  function updateGearButtons() { document.querySelectorAll("[data-gear]").forEach(b => b.classList.toggle("active", b.dataset.gear === state.gearMode)); }
+
+  function paddleUp() { if (state.gearMode === "N") { setGear("G", 1); return; } if (state.gearMode === "R") { setGear("N"); return; } if (state.gearMode === "G") app.manualShift(+1); }
+  function paddleDown() { if (state.gearMode === "G") { if (state.curGear === 1 && Math.abs(state.speedMps) < 0.6) { setGear("N"); return; } app.manualShift(-1); } else if (state.gearMode === "N" && Math.abs(state.speedMps) < 0.6) { setGear("R"); } }
+
+  function latchHarness(force) { const next = force === undefined ? !state.harness : !!force; if (next === state.harness) return; state.harness = next; audio.click(2600); showToast(next ? "6-point harness latched." : "Harness released."); }
+
+  function closeAllDoors(silent) { const was = anyDoorOpen(); state.doors.driver = false; state.doors.passenger = false; if (was) audio.clunk(120); if (!silent && was) showToast("Gullwing doors closed."); updateDoorArt(); }
+  function toggleDoor(which) {
+    const moving = Math.abs(state.speedMps) > 0.45;
+    if (which === "all") { const next = !anyDoorOpen(); if (next && moving) { showToast("Doors stay shut while moving."); return; } state.doors.driver = next; state.doors.passenger = next; next ? audio.motor(0.7) : audio.clunk(120); showToast(next ? "Gullwings rising." : "Gullwing doors closed."); }
+    else if (state.doors[which] !== undefined) { const next = !state.doors[which]; if (next && moving) { showToast("Doors stay shut while moving."); return; } state.doors[which] = next; next ? audio.motor(0.65) : audio.clunk(120); showToast(`${which === "driver" ? "Driver" : "Passenger"} gullwing ${next ? "open" : "closed"}.`); }
+    updateDoorArt();
+  }
+  function updateDoorArt() { if (el.doorArt) el.doorArt.classList.toggle("open", anyDoorOpen()); }
+
+  function setMode(m) {
+    state.driveMode = m;
+    setActive("modeBtn", true); document.getElementById("modeBtn").textContent = m === "wet" ? "Wet" : m === "sport" ? "Sport" : "Race";
+    document.getElementById("modeBtn").classList.toggle("race", m === "race");
+    // Race sharpens everything; Wet softens and adds TC margin; exhaust/suspension follow in physics+audio
+    if (m === "race") { state.exhaustValve = true; }
+    if (m === "wet") { state.tractionControl = true; state.esc = true; }
+    audio.click(1400);
+    showToast(m === "race" ? "Race: dampers firm, ESC trail, exhaust open, aero hunting." : m === "sport" ? "Sport: balanced throttle and shifts." : "Wet: throttle softened, traction protected.", "Huayra BC");
+  }
+  function cycleMode() { setMode(state.driveMode === "wet" ? "sport" : state.driveMode === "sport" ? "race" : "wet"); }
+
+  function toggleAero() { state.aeroAuto = !state.aeroAuto; if (!state.aeroAuto) state.wingManual = 1; audio.motor(0.5); showToast(state.aeroAuto ? "Active aero: AUTO — flaps hunting downforce and braking." : "Active aero: wing fixed (manual)."); }
+  function toggleExhaust() { state.exhaustValve = !state.exhaustValve; audio.click(1200); showToast(state.exhaustValve ? "Titanium exhaust valve open — full voice." : "Exhaust valve closed — muted."); }
+  function toggleLights() { state.lights = !state.lights; showToast(state.lights ? "Headlamps on." : "Headlamps off."); }
+  function toggleLift() { state.rideHeight = state.rideHeight === 1 ? 0 : 1; audio.motor(0.8); showToast(state.rideHeight === 1 ? "Nose lifted for the ramp." : "Nose dropped to ride height."); }
+  function armLaunch() {
+    if (state.driveMode !== "race") setMode("race");
+    if (state.gearMode !== "G") setGear("G", 1);
+    state.launchArmed = !state.launchArmed; setActive("launchBtn", state.launchArmed);
+    showToast(state.launchArmed ? "Launch control armed — full throttle on the brake, then release." : "Launch control off.", "Huayra BC");
+  }
+  function toggleEsc() { state.esc = !state.esc; if (!state.esc) state.tractionControl = false; else state.tractionControl = true; setActive("escBtn", state.esc); showToast(state.esc ? "ESC + traction control on." : "ESC off — traction control off. Mind the rear."); }
+  function togglePit() { state.pitLimiter = !state.pitLimiter; setActive("pitBtn", state.pitLimiter); showToast(state.pitLimiter ? "Pit limiter — held to 60 km/h." : "Pit limiter off."); }
+
+  function selectCircuit(name) {
+    const circ = CIRCUITS[name]; if (!circ) { showToast(`No ${name} on file.`, "Co-Pilot"); return; }
+    state.route = { active: true, name, env: circ.env, totalM: circ.dist, remainingM: circ.dist, arrived: false };
+    state.lap = { running: true, startDist: state.distanceM, lastMs: 0, bestMs: 0, curMs: 0 };
+    app.buildCornersForRoute(); app.seedWorld();
+    const loop = app.isLoop();
+    showToast(`${loop ? "Lapping" : "Route set for"} ${circ.blurb}. ${(circ.dist / 1000).toFixed(1)} km${loop ? " / lap" : ""}.`, "Co-Pilot");
+    document.querySelectorAll("[data-circuit]").forEach(b => b.classList.toggle("active", b.dataset.circuit === name));
+  }
+  function toggleTestDriver(force) {
+    const next = force === undefined ? !state.testDriver : !!force; state.testDriver = next;
+    if (next) { closeAllDoors(true); latchHarness(true); if (state.gearMode !== "G") setGear("G", 1); showToast("On it. Watch the line through the next sequence.", "Test Driver"); }
+    else showToast("All yours.", "Test Driver");
+    setActive("testDriverBtn", next);
+  }
+  function setCruiseSpeed(kmhVal, announce) { state.cruiseSetKmh = clamp(Math.round(kmhVal), 30, 350); if (announce) showToast(`Cruise set to ${state.cruiseSetKmh} km/h.`, "Co-Pilot"); }
+  function toggleCruise() { state.adaptiveCruise = !state.adaptiveCruise; if (state.adaptiveCruise) { if (state.gearMode !== "G") setGear("G", 1); const now = Math.round(Math.abs(kmh(state.speedMps))); if (now >= 30) state.cruiseSetKmh = Math.min(350, now); showToast(`Cruise holding ${state.cruiseSetKmh} km/h.`, "Huayra BC"); } else showToast("Cruise off."); }
+
+  function resetCar() {
+    Object.assign(state, { speedMps: 0, distanceM: 0, laneOffset: 0, headingRel: 0, steer: 0, throttle: 0, brake: 0, padThrottle: 0, padBrake: 0, rpm: SPEC.idleRpm, boostBar: 0, curGear: 1, gearMode: "N", testDriver: false, adaptiveCruise: false, launchArmed: false, launchActive: false, pitLimiter: false });
+    state.route = { active: false, name: "Free run", env: "track", totalM: 0, remainingM: 0, arrived: false };
+    state.lap = { running: false, startDist: 0, lastMs: 0, bestMs: 0, curMs: 0 };
+    app.buildCornersForRoute(); closeAllDoors(true); updateGearButtons();
+    const t = document.getElementById("throttleSlider"), b = document.getElementById("brakeSlider"); if (t) t.value = 0; if (b) b.value = 0;
+    document.querySelectorAll("[data-circuit]").forEach(b2 => b2.classList.remove("active"));
+    showToast("Back in the pit lane.", "Huayra BC");
+  }
+
+  Object.assign(app, { setActive, setActiveSafe, anyDoorOpen, setView, setGear, updateGearButtons, paddleUp, paddleDown, latchHarness, closeAllDoors, toggleDoor, updateDoorArt, setMode, cycleMode, toggleAero, toggleExhaust, toggleLights, toggleLift, armLaunch, toggleEsc, togglePit, selectCircuit, toggleTestDriver, setCruiseSpeed, toggleCruise, resetCar });
+}
+
+/* ===== cockpit / engine feature effects ===== */
+{
+  const app = window.PaganiApp;
+  const { state, el, clamp, audio } = app;
+  const showToast = app.showToast;
+
+  function setToggle(key, value) { const next = value === undefined ? !state[key] : value; state[key] = next; applyEffect(key, next); }
+  function applyEffect(key, on) {
+    switch (key) {
+      case "heat": if (on) state.cool = false; if (on) audio.whoosh(0.4); showToast(on ? "Seat heating on." : "Seat heating off."); break;
+      case "cool": if (on) state.heat = false; if (on) audio.whoosh(0.5); showToast(on ? "Climate A/C drawing cool air." : "A/C off."); break;
+      case "ambient": showToast(on ? "Cabin ambient lighting on." : "Ambient lighting off."); break;
+      case "shifterLight": showToast(on ? "Exposed gearbox illuminated." : "Gearbox light off."); break;
+      case "audioCabin": audio.setMusic(on); if (audio.hasUserTrack()) { app.setNowPlaying(on ? `${audio.userTrackIsVideo ? "♪ From your film: " : "♪ Now playing: "}${audio.userTrackName}` : `Paused — ${audio.userTrackName}`, on); showToast(on ? `Cabin audio — “${audio.userTrackName}”.` : "Music paused."); } else { app.setNowPlaying(on ? "House suite playing" : "Cabin silent — engine only", on); showToast(on ? "Cabin audio on." : "Cabin audio off — engine only."); } break;
+      case "coolingFans": el.engineBay.classList.toggle("glow", false); if (on) audio.motor(0.6); showToast(on ? "Cooling fans running." : "Cooling fans off."); break;
+      case "engineCoverOpen": el.engineBay.style.setProperty("--cover", on ? "0%" : "-101%"); el.engineCover.textContent = on ? "ENGINE COVER OPEN" : "ENGINE COVER CLOSED"; audio.motor(0.9); showToast(on ? "Engine cover raised — the V12 on show." : "Engine cover closed."); break;
+      case "antiLag": showToast(on ? "Anti-lag armed — keeps the turbos spooled, bangs on the overrun (Race)." : "Anti-lag off."); if (on && state.driveMode !== "race") app.setMode("race"); break;
+      case "ignition": break;
+    }
+  }
+  function adjustSeat(delta) { state.frontRecline = clamp(state.frontRecline + delta, -4, 22); audio.motor(0.4); showToast(`Seat recline ${state.frontRecline}°.`); }
+  function blipThrottle() { if (!state.ignition) return; audio.blip(1); state.rpm = Math.min(app.SPEC.redlineRpm, state.rpm + 2600); el.engineBay.classList.add("glow"); setTimeout(() => el.engineBay.classList.remove("glow"), 220); showToast("Throttle blip — 6 cylinders a bank clearing their throats."); }
+  function coldStartFlair() { audio.startupFlair(); el.engineBay.classList.add("glow"); setTimeout(() => el.engineBay.classList.remove("glow"), 600); showToast("Cold-start flare — the AMG V12 barks to 3,000 and settles."); }
+  function setIgnition(on) {
+    state.ignition = on; app.setActive("startSwitchBtn", on);
+    if (on) { audio.startupFlair(); state.rpm = app.SPEC.idleRpm; showToast("Ignition on — V12 lit.", "Huayra BC"); }
+    else { if (state.gearMode === "G" || state.gearMode === "R") app.setGear("N"); state.rpm = 0; showToast("Ignition off."); }
+  }
+  Object.assign(app, { setToggle, applyEffect, adjustSeat, blipThrottle, coldStartFlair, setIgnition });
+}
+
+/* ===== Co-Pilot voice ===== */
+{
+  const app = window.PaganiApp;
+  const { state, el, audio } = app;
+  const showToast = app.showToast;
+  function processVoice() {
+    const text = el.voiceInput.value.trim().toLowerCase(); if (!text) return; el.voiceInput.value = "";
+    const has = (...w) => w.some(x => text.includes(x)); const reply = (m) => showToast(m, "Co-Pilot");
+    const numberFrom = (v) => { const m = v.match(/(\d{1,3})/); return m ? parseInt(m[1], 10) : null; };
+    if (/^(hi|hello|hey|ciao)/.test(text)) { reply("Pronto. Which circuit?"); return; }
+    if (has("thank", "grazie")) { reply("Prego."); return; }
+    let acted = false;
+    const map = [["Pista di Modena", ["modena", "pista"]], ["Mountain Pass", ["mountain", "pass", "futa"]], ["Nardò Ring", ["nardo", "nardò", "ring"]], ["Autostrada", ["autostrada", "highway", "a1"]], ["Coastal Run", ["coast", "coastal", "sea"]], ["Vallelunga", ["vallelunga"]]];
+    for (const [name, keys] of map) if (keys.some(k => text.includes(k))) { app.selectCircuit(name); acted = true; if (has("you drive", "test driver", "hot lap", "lap it")) app.toggleTestDriver(true); break; }
+    const spd = numberFrom(text);
+    if (spd !== null && has("cruise", "km", "hold", "maintain", "keep", "drive at", "go at")) { if (state.gearMode !== "G") app.setGear("G", 1); state.adaptiveCruise = true; app.setCruiseSpeed(spd, false); reply(`Holding ${state.cruiseSetKmh} km/h.`); acted = true; }
+    else if (has("faster", "speed up")) { app.setCruiseSpeed(state.cruiseSetKmh + 10, true); acted = true; }
+    else if (has("slower", "slow down")) { app.setCruiseSpeed(state.cruiseSetKmh - 10, true); acted = true; }
+    if (has("launch")) { app.armLaunch(); acted = true; }
+    if (has("race")) { app.setMode("race"); acted = true; } else if (has("sport")) { app.setMode("sport"); acted = true; } else if (has("wet", "rain")) { app.setMode("wet"); acted = true; }
+    if (has("aero", "wing", "downforce")) { app.toggleAero(); acted = true; }
+    if (has("exhaust", "valve", "louder")) { app.toggleExhaust(); acted = true; }
+    if (has("door", "gullwing")) { has("open") ? app.toggleDoor("all") : app.closeAllDoors(); acted = true; }
+    if (has("harness", "belt")) { app.latchHarness(true); acted = true; }
+    if (has("you drive", "test driver", "hot lap", "take over")) { app.toggleTestDriver(true); acted = true; }
+    if (has("i'll drive", "let me drive", "my turn", "dismiss")) { if (state.testDriver) app.toggleTestDriver(false); acted = true; }
+    if (has("music", "play", "song", "audio")) { app.setToggle("audioCabin", true); acted = true; }
+    if (has("horn", "honk", "clacson")) { audio.horn(true); setTimeout(() => audio.horn(false), 600); acted = true; }
+    if (has("stop", "pull over", "pit")) { state.adaptiveCruise = false; state.testDriver = false; state.padThrottle = 0; reply("Pulling in."); acted = true; }
+    if (!acted) reply("Didn't catch that. Try “take me to Nardò”, “race mode”, “launch”, “open the doors”, or “cruise at 200”.");
+  }
+  app.processVoice = processVoice;
+}
+
+/* ===== HUD (per frame) ===== */
+{
+  const app = window.PaganiApp;
+  const { state, el, SPEC, clamp, lerp, kmh } = app;
+  function setActive(id, on) { const n = document.getElementById(id); if (n) n.classList.toggle("active", !!on); }
+
+  function updateUi() {
+    const speed = Math.round(Math.abs(kmh(state.speedMps)));
+    el.speedReadout.textContent = String(speed);
+    el.gearReadout.textContent = state.gearMode === "G" ? String(state.curGear) : state.gearMode;
+    el.gearReadout.classList.toggle("limit", state.gearMode === "G" && state.rpm > 6050);
+    el.rpmText.textContent = `${Math.round(state.rpm)} rpm`;
+    el.rpmBar.style.width = clamp(state.rpm / SPEC.redlineRpm * 100, 0, 100) + "%";
+    el.boostText.textContent = `${state.boostBar.toFixed(1)} bar`;
+    el.boostBar.style.width = clamp(state.boostBar / 1.35 * 100, 0, 100) + "%";
+    el.throttleText.textContent = Math.round(state.throttle * 100) + "%";
+    el.throttleBar.style.width = Math.round(state.throttle * 100) + "%";
+    el.brakeText.textContent = Math.round(state.brake * 100) + "%";
+    el.brakeBar.style.width = Math.round(state.brake * 100) + "%";
+    el.throttlePedal.style.setProperty("--level", Math.round(state.throttle * 100) + "%");
+    el.brakePedal.style.setProperty("--level", Math.round(state.brake * 100) + "%");
+    const ts = document.getElementById("throttleSliderVal"), bs = document.getElementById("brakeSliderVal");
+    if (ts) ts.textContent = Math.round((state.padThrottle || 0) * 100) + "%";
+    if (bs) bs.textContent = Math.round((state.padBrake || 0) * 100) + "%";
+
+    el.flapFront.style.width = clamp(state.frontFlap * 100, 0, 100) + "%";
+    el.flapRear.style.width = clamp(state.aeroDeploy * 100, 0, 100) + "%";
+    el.aeroState.textContent = state.aeroAuto ? "AUTO" : "FIX";
+
+    const warn = [];
+    if (app.anyDoorOpen()) warn.push("doors open");
+    if (!state.ignition) warn.push("ignition off");
+    if (state.launchArmed) warn.push("launch armed");
+    if (state.gearMode === "N") warn.push("neutral");
+    if (state.pitLimiter) warn.push("pit limiter");
+    if (!warn.length) warn.push(state.testDriver ? `test driver lapping ${state.route.active ? state.route.name : ""}` : (state.adaptiveCruise ? "cruise" : (state.driveMode + " mode")));
+    el.warning.textContent = warn.join(" · ");
+
+    el.beltRead.textContent = state.harness ? "Latched" : "Open";
+    el.doorState.textContent = app.anyDoorOpen() ? "Open" : "Closed";
+    el.rideHeightRead.textContent = state.rideHeight === 1 ? "Lifted" : "Standard";
+    el.lightState.textContent = state.lights ? "Active" : "Off";
+    el.frontSeatRead.textContent = `${state.frontRecline}°`;
+    el.climateRead.textContent = `${Math.round(state.seatTempC)}°C`;
+    el.modeReadCab.textContent = state.driveMode === "wet" ? "Wet" : state.driveMode === "sport" ? "Sport" : "Race";
+    el.rideRead.textContent = state.driveMode === "wet" ? "Soft" : state.driveMode === "sport" ? "Sport" : "Race";
+    el.downforceRead.textContent = `${Math.round(state.downforceN / 9.81)} kg`;
+    el.gRead.textContent = state.lateralG.toFixed(2) + " g";
+    el.brakeTempRead.textContent = `${Math.round(state.brakeTempC)}°C`;
+    el.oilTempRead.textContent = `${Math.round(state.oilTempC)}°C`;
+    el.waterTempRead.textContent = `${Math.round(state.waterTempC)}°C`;
+    el.boostRead.textContent = `${state.boostBar.toFixed(1)} bar`;
+    el.egtRead.textContent = `${Math.round(state.egtC)}°C`;
+    el.navRead.textContent = state.route.active ? state.route.name : "Free run";
+    el.lapRead.textContent = state.lap.bestMs ? `${app.fmtLap(state.lap.curMs)} / ${app.fmtLap(state.lap.bestMs)}` : (state.lap.curMs > 0 ? app.fmtLap(state.lap.curMs) : "—");
+    el.driverRead.textContent = state.testDriver ? "Test Driver" : "You";
+    el.cruiseRead.textContent = state.adaptiveCruise ? `${Math.round(state.cruiseSetKmh)} km/h` : "Off";
+    el.tcRead.textContent = state.esc ? (state.tractionControl ? "On" : "ESC only") : "Off";
+    el.dynStatus.textContent = `${state.driveMode === "race" ? "Race" : state.driveMode === "sport" ? "Sport" : "Wet"} · ESC ${state.esc ? "on" : "off"} · aero ${state.aeroAuto ? "auto" : "fixed"}`;
+
+    if (state.route.active && !app.isLoop()) { el.distRead.textContent = `${(state.route.remainingM / 1000).toFixed(2)} km`; }
+    else el.distRead.textContent = app.isLoop() && state.route.active ? "lap" : "—";
+
+    const targetTemp = state.heat ? 30 : state.cool ? 18 : 22; state.seatTempC = lerp(state.seatTempC, targetTemp, 0.02);
+
+    // exterior art
+    document.documentElement.style.setProperty("--wing-deg", (12 + state.aeroDeploy * 26) + "deg");
+    document.documentElement.style.setProperty("--flap-deg", (state.frontFlap * 22) + "deg");
+    document.documentElement.style.setProperty("--wheel-rot", `${state.wheelRotation}deg`);
+    if (el.quadExhaustArt) el.quadExhaustArt.classList.toggle("hot", state.egtC > 620 && state.exhaustValve);
+
+    // engine art
+    const turboRot = (state.time * (200 + state.boostBar * 2600)) % 360;
+    if (el.turboL) el.turboL.style.setProperty("--turbo-rot", turboRot + "deg");
+    if (el.turboR) el.turboR.style.setProperty("--turbo-rot", -turboRot + "deg");
+    el.engineBay.style.setProperty("--haze", clamp((state.egtC - 360) / 600, 0, 0.9));
+
+    // dynamics art
+    if (el.gearStack) [...el.gearStack.children].forEach((n, i) => n.classList.toggle("active", state.gearMode === "G" && i + 1 === state.curGear));
+    if (el.shifterLink) { const idx = state.gearMode === "G" ? state.curGear : 1; el.shifterLink.style.setProperty("--link-y", ((idx - 4) * 12) + "px"); el.shifterLink.style.setProperty("--link-rot", (state.shiftTimer > 0 ? 8 : 0) + "deg"); }
+    if (el.aeroFL) el.aeroFL.style.transform = `rotate(${state.frontFlap * 26}deg)`;
+    if (el.aeroRL) el.aeroRL.style.transform = `rotate(${-(state.aeroDeploy * 30)}deg)`;
+    if (el.aeroArrow) el.aeroArrow.style.height = (state.aeroDeploy * 30) + "px";
+    if (el.driveshaft) el.driveshaft.style.setProperty("--shaft-angle", `${Math.sin(state.time * Math.max(2, Math.abs(state.speedMps))) * 1.4}deg`);
+    el.cabinWave.style.transform = `translateY(${state.cabinHeaveG * 150}px)`;
+    el.roadWave.style.transform = `translateY(${state.roadInputG * 110}px)`;
+
+    // gforce telemetry dot
+    if (el.gdot) { const gx = clamp(50 + state.lateralG * 30, 6, 94); const accelG = clamp((state.throttle - state.brake) * 1.2, -1.4, 1.4); const gy = clamp(50 - accelG * 30, 6, 94); el.gdot.style.left = gx + "%"; el.gdot.style.top = gy + "%"; }
+
+    // cabin svg
+    const tachGearArt = document.getElementById("tachGearArt"); if (tachGearArt) tachGearArt.textContent = state.gearMode === "G" ? String(state.curGear) : state.gearMode;
+    const cabinWheel = document.getElementById("cabinWheelG"); if (cabinWheel) cabinWheel.setAttribute("transform", `translate(500,300) rotate(${(state.steer * 90).toFixed(1)})`);
+    const leverArt = document.getElementById("leverArt"); if (leverArt) leverArt.setAttribute("transform", `rotate(${state.shiftTimer > 0 ? 10 : 0})`);
+    const startArt = document.getElementById("startArt"); if (startArt) startArt.setAttribute("fill", state.ignition ? "#1f7a3a" : "#7a1f1f");
+    const tachArt = document.getElementById("tachArt"); if (tachArt) tachArt.setAttribute("opacity", state.shifterLight ? "1" : "0.4");
+
+    // button states
+    setActive("aeroBtn", state.aeroAuto); setActive("wingBtn", state.aeroAuto);
+    setActive("doorAllBtn", app.anyDoorOpen());
+    setActive("exhaustBtn", state.exhaustValve); setActive("exhaustBtn2", state.exhaustValve); setActive("exhaustBtn3", state.exhaustValve);
+    setActive("lightsBtn", state.lights); setActive("lightsBtn2", state.lights);
+    setActive("liftBtn", state.rideHeight === 1);
+    setActive("escBtn", state.esc); setActive("launchBtn", state.launchArmed); setActive("pitBtn", state.pitLimiter);
+    setActive("testDriverBtn", state.testDriver);
+    setActive("heatBtn", state.heat); setActive("coolBtn", state.cool); setActive("ambientBtn", state.ambient);
+    setActive("audioBtn", state.audioCabin); setActive("shifterLightBtn", state.shifterLight); setActive("startSwitchBtn", state.ignition);
+    setActive("coverBtn", state.engineCoverOpen); setActive("fansBtn", state.coolingFans); setActive("antiLagBtn", state.antiLag);
+    setActive("dataBtn", state.dataHud);
+    setActive("wetBtn", state.driveMode === "wet"); setActive("raceBtn", state.driveMode === "race");
+    document.getElementById("modeBtn").classList.toggle("race", state.driveMode === "race");
+    document.getElementById("modeBtn").classList.add("active");
+
+    if (document.body.classList.contains("view-circuit")) app.drawMap();
+  }
+  Object.assign(app, { updateUi });
+}
+
+/* ===== events ===== */
+{
+  const app = window.PaganiApp;
+  const { state, el, clamp, audio } = app;
+  const showToast = app.showToast;
+
+  function bindCore() {
+    document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => app.setView(b.dataset.view)));
+    document.querySelectorAll("[data-gear]").forEach(b => b.addEventListener("click", () => app.setGear(b.dataset.gear)));
+    document.querySelectorAll("[data-door]").forEach(b => b.addEventListener("click", () => app.toggleDoor(b.dataset.door)));
+    document.querySelectorAll("[data-circuit]").forEach(b => b.addEventListener("click", () => { app.selectCircuit(b.dataset.circuit); const driving = state.keys.KeyW || state.keys.ArrowUp || state.padThrottle > 0; if (!driving) app.toggleTestDriver(true); }));
+
+    document.getElementById("aeroBtn").addEventListener("click", app.toggleAero);
+    document.getElementById("wingBtn").addEventListener("click", app.toggleAero);
+    document.getElementById("doorAllBtn").addEventListener("click", () => app.toggleDoor("all"));
+    document.getElementById("liftBtn").addEventListener("click", app.toggleLift);
+    document.getElementById("resetBtn").addEventListener("click", app.resetCar);
+    ["exhaustBtn", "exhaustBtn2", "exhaustBtn3"].forEach(id => document.getElementById(id).addEventListener("click", app.toggleExhaust));
+    ["lightsBtn", "lightsBtn2"].forEach(id => document.getElementById(id).addEventListener("click", app.toggleLights));
+
+    document.getElementById("modeBtn").addEventListener("click", app.cycleMode);
+    document.getElementById("wetBtn").addEventListener("click", () => app.setMode("wet"));
+    document.getElementById("raceBtn").addEventListener("click", () => app.setMode("race"));
+    document.getElementById("escBtn").addEventListener("click", app.toggleEsc);
+    document.getElementById("launchBtn").addEventListener("click", app.armLaunch);
+    document.getElementById("pitBtn").addEventListener("click", app.togglePit);
+    document.getElementById("testDriverBtn").addEventListener("click", () => app.toggleTestDriver());
+    document.getElementById("upPaddle").addEventListener("click", app.paddleUp);
+    document.getElementById("downPaddle").addEventListener("click", app.paddleDown);
+    document.getElementById("voiceBtn").addEventListener("click", app.processVoice);
+    el.voiceInput.addEventListener("keydown", e => { if (e.key === "Enter") app.processVoice(); });
+    document.getElementById("cruiseUp").addEventListener("click", () => { app.setCruiseSpeed(state.cruiseSetKmh + 10, true); if (!state.adaptiveCruise) app.toggleCruise(); });
+    document.getElementById("cruiseDown").addEventListener("click", () => app.setCruiseSpeed(state.cruiseSetKmh - 10, true));
+    document.getElementById("lapResetBtn").addEventListener("click", () => { state.lap = { running: state.route.active, startDist: state.distanceM, lastMs: 0, bestMs: state.lap.bestMs, curMs: 0 }; showToast("Lap timer reset."); });
+    document.getElementById("dataBtn").addEventListener("click", () => { state.dataHud = !state.dataHud; showToast(state.dataHud ? "Telemetry overlay on." : "Telemetry overlay off."); });
+  }
+
+  function bindCockpit() {
+    const t = (id, key) => document.getElementById(id).addEventListener("click", () => app.setToggle(key));
+    t("heatBtn", "heat"); t("coolBtn", "cool"); t("ambientBtn", "ambient"); t("audioBtn", "audioCabin"); t("shifterLightBtn", "shifterLight");
+    t("fansBtn", "coolingFans"); t("antiLagBtn", "antiLag");
+    document.getElementById("coverBtn").addEventListener("click", () => app.setToggle("engineCoverOpen"));
+    document.getElementById("blipBtn").addEventListener("click", app.blipThrottle);
+    document.getElementById("coldStartBtn").addEventListener("click", app.coldStartFlair);
+    document.getElementById("frontForward").addEventListener("click", () => app.adjustSeat(-2));
+    document.getElementById("frontBack").addEventListener("click", () => app.adjustSeat(2));
+    document.getElementById("harnessBtn").addEventListener("click", () => app.latchHarness());
+    document.getElementById("startSwitchBtn").addEventListener("click", () => app.setIgnition(!state.ignition));
+  }
+
+  function bindMedia() {
+    const studioFile = document.getElementById("studioFile");
+    document.getElementById("studioUploadBtn").addEventListener("click", () => { audio.init(); audio.resume(); studioFile.click(); });
+    studioFile.addEventListener("change", e => {
+      const file = e.target.files && e.target.files[0]; e.target.value = ""; if (!file) return; audio.init(); audio.resume();
+      if (!audio.ready) { showToast("This browser can't open the audio.", "Cabin Audio"); return; }
+      const isVideo = /^video\//.test(file.type) || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name);
+      let media; try { media = audio.loadUserTrack(file); } catch (err) { showToast("Couldn't load that file.", "Cabin Audio"); return; }
+      state.audioCabin = true; app.setNowPlaying(isVideo ? `Lifting the soundtrack from “${audio.userTrackName}”…` : `Loading “${audio.userTrackName}”…`);
+      const onReady = () => { media.removeEventListener("loadeddata", onReady); audio.setMusicVolume(0.78); media.play().then(() => { app.setNowPlaying(`${audio.userTrackIsVideo ? "♪ From your film: " : "♪ Now playing: "}${audio.userTrackName}`, true); showToast(`Now playing “${audio.userTrackName}”.`, "Cabin Audio"); }).catch(() => { app.setNowPlaying(`Ready — press Cabin Audio to play “${audio.userTrackName}”`); showToast("Loaded. Press Cabin Audio to start.", "Cabin Audio"); }); };
+      media.addEventListener("loadeddata", onReady);
+      media.onerror = () => { app.setNowPlaying("That file couldn't be read — try an MP3 or MP4."); showToast("Can't decode that file. MP3 or MP4 works best.", "Cabin Audio"); };
+    });
+    const engineFile = document.getElementById("engineFile");
+    document.getElementById("engineLoadBtn").addEventListener("click", () => { audio.init(); audio.resume(); engineFile.click(); });
+    engineFile.addEventListener("change", e => { const file = e.target.files && e.target.files[0]; e.target.value = ""; if (!file) return; audio.init(); audio.resume(); if (!audio.ready) { showToast("This browser can't open the audio engine.", "Huayra BC"); return; } const name = file.name.replace(/\.[^.]+$/, ""); app.setEngineStatus(`Loading “${name}”…`); audio.loadEngineFromFile(file).then(() => { app.setEngineStatus(`Engine voice: ${name} — real recording`); showToast("Real V12 recording loaded — pitched with the revs.", "Huayra BC"); }).catch(() => { app.setEngineStatus("Couldn't read that file — try a clean MP3 or WAV."); showToast("Couldn't decode that audio. A short MP3/WAV of the V12 works best.", "Huayra BC"); }); });
+  }
+
+  function setupPedals() {
+    const throttle = document.getElementById("throttleSlider"), brake = document.getElementById("brakeSlider");
+    const bind = (slider, key, other, otherSlider) => {
+      const apply = () => { state[key] = clamp((+slider.value || 0) / 100, 0, 1); if (state[key] > 0 && otherSlider) { otherSlider.value = 0; state[other] = 0; } };
+      slider.addEventListener("input", apply);
+      slider.addEventListener("wheel", e => { e.preventDefault(); slider.value = clamp((+slider.value || 0) - Math.sign(e.deltaY) * 6, 0, 100); apply(); }, { passive: false });
+    };
+    bind(throttle, "padThrottle", "padBrake", brake); bind(brake, "padBrake", "padThrottle", throttle);
+  }
+  function bindHorn() { const b = document.getElementById("hornBtn"); const on = () => { state.horn = true; audio.horn(true); }; const off = () => { state.horn = false; audio.horn(false); }; b.addEventListener("pointerdown", e => { e.preventDefault(); on(); }); b.addEventListener("pointerup", off); b.addEventListener("pointerleave", off); app.hornOn = on; app.hornOff = off; }
+  function bindKeyboard() {
+    window.addEventListener("keydown", e => {
+      state.keys[e.code] = true;
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
+      if (e.metaKey || e.ctrlKey) return;
+      if (e.code === "KeyN") app.setGear("N");
+      if (e.code === "KeyR" && !e.repeat) app.setGear("R");
+      if (e.code === "KeyE" && !e.repeat) app.paddleUp();
+      if (e.code === "KeyQ" && !e.repeat) app.paddleDown();
+      if (e.code === "KeyL" && !e.repeat) app.armLaunch();
+      if (e.code === "KeyH" && !e.repeat) app.hornOn();
+    });
+    window.addEventListener("keyup", e => { state.keys[e.code] = false; if (e.code === "KeyH") app.hornOff(); });
+  }
+  function bindMobilePad() { document.querySelectorAll("[data-pad]").forEach(b => { const map = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" }; const code = map[b.dataset.pad]; b.addEventListener("pointerdown", e => { e.preventDefault(); state.keys[code] = true; }); b.addEventListener("pointerup", () => state.keys[code] = false); b.addEventListener("pointerleave", () => state.keys[code] = false); b.addEventListener("pointercancel", () => state.keys[code] = false); }); }
+  function bindStart() {
+    const wake = () => { audio.init(); audio.resume(); };
+    window.addEventListener("pointerdown", wake); window.addEventListener("keydown", wake);
+    document.getElementById("startBtn").addEventListener("click", () => { audio.init(); audio.resume(); el.keyOverlay.classList.add("hide"); state.started = true; state.ignition = true; audio.startupFlair(); setTimeout(() => audio.chime([523, 784, 1047]), 700); showToast("V12 lit. Pull the right paddle for 1st, or open Circuit for a hot lap.", "Huayra BC"); });
+  }
+
+  bindCore(); bindCockpit(); bindMedia(); setupPedals(); bindHorn(); bindKeyboard(); bindMobilePad(); bindStart();
+}
+
+/* ===== main loop ===== */
+{
+  const app = window.PaganiApp;
+  const { state, clamp, audio } = app;
+  function gameLoop(now) {
+    const dt = clamp((now - state.lastTime) / 1000, 0, 0.05);
+    state.lastTime = now; state.time += dt;
+    app.updatePhysics(dt); app.drawWorld(); if (audio.ready) audio.update(state, dt); app.updateUi();
+    requestAnimationFrame(gameLoop);
+  }
+  app.resizeCanvas(); app.injectArt(); app.buildCornersForRoute(); app.seedWorld(); app.updateDoorArt(); app.updateGearButtons(); app.setMode("race");
+  requestAnimationFrame(gameLoop);
+}
+  </script>
+</body>
+</html>
